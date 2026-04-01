@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legend of Ezra</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Press Start 2P', monospace;
+    overflow: hidden;
+  }
+
+  #gameContainer {
+    position: relative;
+    image-rendering: pixelated;
+  }
+
+  canvas {
+    display: block;
+    border: 4px solid #3a3a2a;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  #hud {
+    position: absolute;
+    top: 8px; left: 8px; right: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .hud-left, .hud-right {
+    background: rgba(0,0,0,0.7);
+    padding: 6px 10px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 10px;
+    line-height: 1.6;
+  }
+
+  #mobileControls {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 0; right: 0;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .dpad {
+    position: absolute;
+    left: 30px;
+    bottom: 10px;
+    width: 140px;
+    height: 140px;
+    pointer-events: auto;
+  }
+
+  .dpad button {
+    position: absolute;
+    width: 46px;
+    height: 46px;
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .dpad button:active { background: rgba(255,255,255,0.45); }
+  .dpad .up    { top: 0; left: 47px; }
+  .dpad .down  { bottom: 0; left: 47px; }
+  .dpad .left  { top: 47px; left: 0; }
+  .dpad .right { top: 47px; right: 0; }
+
+  .action-buttons {
+    position: absolute;
+    right: 30px;
+    bottom: 30px;
+    pointer-events: auto;
+  }
+
+  .action-buttons button {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(220,50,50,0.5);
+    border: 2px solid rgba(255,100,100,0.6);
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .action-buttons button:active { background: rgba(220,50,50,0.8); }
+
+  #titleScreen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    background: #000;
+  }
+  #titleScreen h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 28px;
+    color: #ffcc00;
+    text-shadow: 3px 3px 0 #aa6600, -1px -1px 0 #ffee88;
+    margin-bottom: 8px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  #titleScreen .subtitle {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: #88cc88;
+    margin-bottom: 50px;
+  }
+  #titleScreen .start-prompt {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: #fff;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* Level transition overlay */
+  #levelTransition {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 150;
+    background: rgba(0,0,0,0.95);
+  }
+  #levelTransition h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    color: #aa44dd;
+    text-shadow: 2px 2px 0 #440066, 0 0 20px #8800cc;
+    margin-bottom: 12px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  #levelTransition .level-subtitle {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: #8866aa;
+    margin-bottom: 40px;
+  }
+  #levelTransition .level-prompt {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: #ccc;
+    animation: blink 1s infinite;
+  }
+</style>
+</head>
+<body>
+
+<div id="gameContainer">
+  <canvas id="game" width="640" height="480"></canvas>
+
+  <div id="titleScreen">
+    <h1>LEGEND OF<br>EZRA</h1>
+    <div class="subtitle">~ The Shattered Crystal ~</div>
+    <div class="start-prompt">PRESS ENTER OR TAP TO START</div>
+  </div>
+
+  <div id="levelTransition">
+    <h2>LEVEL 2<br>THE SHADOW TEMPLE</h2>
+    <div class="level-subtitle">~ Darkness Awaits ~</div>
+    <div class="level-prompt">PRESS ENTER OR TAP TO CONTINUE</div>
+  </div>
+
+  <div id="hud" style="display:none;">
+    <div class="hud-left">
+      <div id="hearts"></div>
+      <div id="keys" style="margin-top:4px;"></div>
+    </div>
+    <div class="hud-right">
+      <div id="score">CRYSTALS: 0</div>
+      <div id="room" style="margin-top:4px;"></div>
+    </div>
+  </div>
+</div>
+
+<div id="mobileControls">
+  <div class="dpad">
+    <button class="up" data-dir="up">▲</button>
+    <button class="down" data-dir="down">▼</button>
+    <button class="left" data-dir="left">◀</button>
+    <button class="right" data-dir="right">▶</button>
+  </div>
+  <div class="action-buttons">
+    <button id="btnAttack">ATK</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// LEGEND OF EZRA — A top-down adventure
+// ============================================================
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 640, H = 480;
+const TILE = 32;
+const COLS = W / TILE; // 20
+const ROWS = H / TILE; // 15
+
+// --- PIXEL ART HELPERS ---
+function drawPixelChar(x, y, dir, attacking, frame) {
+  const s = 28;
+  const bx = Math.floor(x - s/2);
+  const by = Math.floor(y - s/2);
+  ctx.fillStyle = '#22aa44';
+  ctx.fillRect(bx+6, by+10, 16, 14);
+  ctx.fillStyle = '#ffcc88';
+  ctx.fillRect(bx+8, by+2, 12, 10);
+  ctx.fillStyle = '#22aa44';
+  ctx.fillRect(bx+6, by+0, 16, 5);
+  ctx.fillRect(bx+18, by+2, 6, 4);
+  ctx.fillStyle = '#222';
+  if (dir === 'up') {
+  } else if (dir === 'left') {
+    ctx.fillRect(bx+9, by+5, 2, 2);
+  } else if (dir === 'right') {
+    ctx.fillRect(bx+17, by+5, 2, 2);
+  } else {
+    ctx.fillRect(bx+10, by+5, 2, 2);
+    ctx.fillRect(bx+16, by+5, 2, 2);
+  }
+  ctx.fillStyle = '#996633';
+  const legOff = Math.sin(frame * 0.3) * 2;
+  ctx.fillRect(bx+8, by+24, 4, 4 + (attacking?0:legOff));
+  ctx.fillRect(bx+16, by+24, 4, 4 - (attacking?0:legOff));
+  if (attacking) {
+    ctx.fillStyle = '#cccccc';
+    const sLen = 20;
+    if (dir === 'up')    { ctx.fillRect(bx+12, by-sLen+2, 4, sLen); }
+    else if (dir === 'down')  { ctx.fillRect(bx+12, by+26, 4, sLen); }
+    else if (dir === 'left')  { ctx.fillRect(bx-sLen+6, by+14, sLen, 4); }
+    else if (dir === 'right') { ctx.fillRect(bx+22, by+14, sLen, 4); }
+    ctx.fillStyle = '#aa8833';
+    if (dir === 'up')    { ctx.fillRect(bx+10, by+2, 8, 3); }
+    else if (dir === 'down')  { ctx.fillRect(bx+10, by+24, 8, 3); }
+    else if (dir === 'left')  { ctx.fillRect(bx+4, by+12, 3, 8); }
+    else if (dir === 'right') { ctx.fillRect(bx+20, by+12, 3, 8); }
+  }
+}
+
+function drawEnemy(x, y, type, frame, hp, maxHp) {
+  const bx = Math.floor(x - 14);
+  const by = Math.floor(y - 14);
+  if (type === 'slime') {
+    const squish = Math.sin(frame * 0.08) * 2;
+    ctx.fillStyle = '#44cc66';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 2, 12 + squish, 10 - squish, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#33aa55';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 6, 10 + squish, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(bx+8, by+8, 4, 4);
+    ctx.fillRect(bx+16, by+8, 4, 4);
+    ctx.fillStyle = '#222';
+    ctx.fillRect(bx+10, by+10, 2, 2);
+    ctx.fillRect(bx+18, by+10, 2, 2);
+  } else if (type === 'skeleton') {
+    ctx.fillStyle = '#ddd';
+    ctx.fillRect(bx+6, by+0, 16, 12);
+    ctx.fillStyle = '#111';
+    ctx.fillRect(bx+8, by+3, 4, 4);
+    ctx.fillRect(bx+16, by+3, 4, 4);
+    ctx.fillRect(bx+11, by+8, 6, 2);
+    ctx.fillStyle = '#bbb';
+    ctx.fillRect(bx+8, by+12, 12, 12);
+    const lOff = Math.sin(frame * 0.1) * 2;
+    ctx.fillRect(bx+8, by+24, 4, 4+lOff);
+    ctx.fillRect(bx+16, by+24, 4, 4-lOff);
+  } else if (type === 'bat') {
+    const wingSpan = Math.sin(frame * 0.2) * 8;
+    ctx.fillStyle = '#6633aa';
+    ctx.fillRect(bx + 8, by + 6, 12, 8);
+    ctx.fillRect(bx + 2 - wingSpan, by + 4, 8, 5);
+    ctx.fillRect(bx + 18 + wingSpan, by + 4, 8, 5);
+    ctx.fillStyle = '#ff3333';
+    ctx.fillRect(bx+10, by+8, 3, 2);
+    ctx.fillRect(bx+16, by+8, 3, 2);
+  } else if (type === 'boss') {
+    const pulse = Math.sin(frame*0.05)*3;
+    ctx.fillStyle = '#880000';
+    ctx.fillRect(bx-4, by-4, 36+pulse, 36+pulse);
+    ctx.fillStyle = '#cc2222';
+    ctx.fillRect(bx, by, 28, 28);
+    ctx.fillStyle = '#ff0';
+    ctx.fillRect(bx+4, by+6, 6, 6);
+    ctx.fillRect(bx+18, by+6, 6, 6);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(bx+6, by+8, 3, 3);
+    ctx.fillRect(bx+20, by+8, 3, 3);
+    ctx.fillStyle = '#ff4444';
+    ctx.fillRect(bx+8, by+18, 12, 4);
+    ctx.fillStyle = '#660000';
+    ctx.fillRect(bx+2, by-8, 5, 8);
+    ctx.fillRect(bx+21, by-8, 5, 8);
+  } else if (type === 'ghost') {
+    // Floating ghost enemy
+    const hover = Math.sin(frame * 0.06) * 4;
+    const ghostY = by + hover;
+    ctx.globalAlpha = 0.6 + Math.sin(frame * 0.04) * 0.15;
+    // Body
+    ctx.fillStyle = '#b8b8d0';
+    ctx.beginPath();
+    ctx.ellipse(x, ghostY + 8, 13, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Tail / wavy bottom
+    ctx.fillRect(bx+3, ghostY+14, 22, 8);
+    for (let i = 0; i < 4; i++) {
+      const wOff = Math.sin(frame * 0.1 + i * 1.5) * 2;
+      ctx.fillRect(bx + 3 + i * 6, ghostY + 20 + wOff, 5, 5);
+    }
+    // Eyes
+    ctx.fillStyle = '#220033';
+    ctx.fillRect(bx+8, ghostY+5, 4, 5);
+    ctx.fillRect(bx+16, ghostY+5, 4, 5);
+    // Mouth
+    ctx.fillRect(bx+10, ghostY+14, 8, 2);
+    ctx.globalAlpha = 1;
+  } else if (type === 'wraith') {
+    // Dark cloaked wraith
+    const drift = Math.sin(frame * 0.04) * 3;
+    const wY = by + drift;
+    ctx.globalAlpha = 0.7;
+    // Dark cloak body
+    ctx.fillStyle = '#221133';
+    ctx.fillRect(bx+4, wY+2, 20, 22);
+    ctx.fillRect(bx+2, wY+6, 24, 14);
+    // Hood
+    ctx.fillStyle = '#110022';
+    ctx.fillRect(bx+6, wY+0, 16, 10);
+    ctx.fillRect(bx+4, wY+2, 20, 8);
+    // Glowing eyes
+    ctx.fillStyle = '#ff2244';
+    ctx.fillRect(bx+9, wY+4, 3, 3);
+    ctx.fillRect(bx+16, wY+4, 3, 3);
+    // Inner eye glow
+    ctx.fillStyle = '#ff6688';
+    ctx.fillRect(bx+10, wY+5, 1, 1);
+    ctx.fillRect(bx+17, wY+5, 1, 1);
+    // Trailing wisps
+    ctx.fillStyle = '#331144';
+    for (let i = 0; i < 3; i++) {
+      const wispOff = Math.sin(frame * 0.08 + i * 2) * 4;
+      ctx.fillRect(bx + 6 + i * 6, wY + 22 + wispOff, 4, 6);
+    }
+    ctx.globalAlpha = 1;
+  } else if (type === 'shadow_hand') {
+    // Hands reaching from the ground
+    const rise = Math.sin(frame * 0.05) * 6;
+    ctx.fillStyle = '#2a1533';
+    // Left hand
+    ctx.fillRect(bx+4, by+10+rise, 5, 14);
+    ctx.fillRect(bx+2, by+6+rise, 3, 8);
+    ctx.fillRect(bx+6, by+4+rise, 3, 10);
+    ctx.fillRect(bx+9, by+7+rise, 3, 8);
+    // Right hand
+    ctx.fillRect(bx+17, by+10+rise, 5, 14);
+    ctx.fillRect(bx+15, by+7+rise, 3, 8);
+    ctx.fillRect(bx+20, by+4+rise, 3, 10);
+    ctx.fillRect(bx+23, by+6+rise, 3, 8);
+    // Glow
+    ctx.fillStyle = '#6622aa';
+    ctx.globalAlpha = 0.3 + Math.sin(frame*0.08)*0.2;
+    ctx.beginPath();
+    ctx.ellipse(x, y+8, 16, 10, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  } else if (type === 'king_boo') {
+    // ---- KING BOO BOSS ----
+    const hover = Math.sin(frame * 0.04) * 5;
+    const cx = x, cy = y + hover;
+    const scale = 1.8; // Boss is big
+    const pulse = Math.sin(frame * 0.03) * 0.08;
+    const s2 = scale + pulse;
+
+    // Ghost aura / glow
+    ctx.globalAlpha = 0.15 + Math.sin(frame * 0.05) * 0.08;
+    ctx.fillStyle = '#8844cc';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 34 * s2, 30 * s2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Main body — round ghost shape
+    ctx.fillStyle = '#c0c4d8';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - 2*s2, 24*s2, 22*s2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Lighter belly highlight
+    ctx.fillStyle = '#d0d4e8';
+    ctx.beginPath();
+    ctx.ellipse(cx + 2*s2, cy - 4*s2, 14*s2, 14*s2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wavy tail bottom
+    ctx.fillStyle = '#c0c4d8';
+    for (let i = 0; i < 5; i++) {
+      const wOff = Math.sin(frame * 0.08 + i * 1.2) * 3 * s2;
+      const tx = cx - 20*s2 + i * 10*s2;
+      ctx.beginPath();
+      ctx.ellipse(tx, cy + 16*s2 + wOff, 6*s2, 7*s2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Tongue
+    ctx.fillStyle = '#cc44aa';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 10*s2, 5*s2, 4*s2, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Mouth — wide grin
+    ctx.fillStyle = '#1a0a2e';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 4*s2, 12*s2, 6*s2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Teeth — jagged top row
+    ctx.fillStyle = '#eef';
+    const teethCount = 6;
+    for (let i = 0; i < teethCount; i++) {
+      const tx = cx - 10*s2 + i * (20*s2 / (teethCount - 1));
+      ctx.fillRect(tx - 1.5*s2, cy + 0*s2, 3*s2, 4*s2);
+    }
+    // Bottom teeth
+    for (let i = 0; i < 4; i++) {
+      const tx = cx - 7*s2 + i * (14*s2 / 3);
+      ctx.fillRect(tx - 1*s2, cy + 6*s2, 2.5*s2, -3*s2);
+    }
+
+    // Eyes — dark angular sockets
+    // Left eye socket
+    ctx.fillStyle = '#1a0a2e';
+    ctx.beginPath();
+    ctx.moveTo(cx - 14*s2, cy - 8*s2);
+    ctx.lineTo(cx - 5*s2, cy - 14*s2);
+    ctx.lineTo(cx - 3*s2, cy - 4*s2);
+    ctx.lineTo(cx - 12*s2, cy - 2*s2);
+    ctx.closePath();
+    ctx.fill();
+    // Right eye socket
+    ctx.beginPath();
+    ctx.moveTo(cx + 14*s2, cy - 8*s2);
+    ctx.lineTo(cx + 5*s2, cy - 14*s2);
+    ctx.lineTo(cx + 3*s2, cy - 4*s2);
+    ctx.lineTo(cx + 12*s2, cy - 2*s2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Glowing purple pupils
+    ctx.fillStyle = '#dd44ff';
+    ctx.beginPath();
+    ctx.ellipse(cx - 8*s2, cy - 7*s2, 3*s2, 3*s2, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx + 8*s2, cy - 7*s2, 3*s2, 3*s2, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Pupil highlights
+    ctx.fillStyle = '#ff88ff';
+    ctx.fillRect(Math.floor(cx - 9*s2), Math.floor(cy - 9*s2), 2*s2, 2*s2);
+    ctx.fillRect(Math.floor(cx + 7*s2), Math.floor(cy - 9*s2), 2*s2, 2*s2);
+
+    // Eyebrow ridges (angry look)
+    ctx.fillStyle = '#1a0a2e';
+    ctx.beginPath();
+    ctx.moveTo(cx - 15*s2, cy - 10*s2);
+    ctx.lineTo(cx - 4*s2, cy - 16*s2);
+    ctx.lineTo(cx - 4*s2, cy - 14*s2);
+    ctx.lineTo(cx - 15*s2, cy - 8*s2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + 15*s2, cy - 10*s2);
+    ctx.lineTo(cx + 4*s2, cy - 16*s2);
+    ctx.lineTo(cx + 4*s2, cy - 14*s2);
+    ctx.lineTo(cx + 15*s2, cy - 8*s2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Crown
+    const crownY = cy - 24*s2;
+    // Crown base
+    ctx.fillStyle = '#cc9900';
+    ctx.fillRect(cx - 8*s2, crownY, 16*s2, 6*s2);
+    // Crown points
+    ctx.fillRect(cx - 9*s2, crownY - 5*s2, 4*s2, 6*s2);
+    ctx.fillRect(cx - 2*s2, crownY - 7*s2, 4*s2, 8*s2);
+    ctx.fillRect(cx + 5*s2, crownY - 5*s2, 4*s2, 6*s2);
+    // Crown jewel
+    ctx.fillStyle = '#cc44cc';
+    ctx.fillRect(cx - 1*s2, crownY - 5*s2, 3*s2, 3*s2);
+    // Crown highlight
+    ctx.fillStyle = '#ffdd44';
+    ctx.fillRect(cx - 7*s2, crownY + 1*s2, 14*s2, 2*s2);
+
+    // Small arms/hands on sides
+    const armWave = Math.sin(frame * 0.06) * 5;
+    ctx.fillStyle = '#c0c4d8';
+    // Left stub arm
+    ctx.beginPath();
+    ctx.ellipse(cx - 22*s2, cy + armWave, 5*s2, 4*s2, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Right stub arm
+    ctx.beginPath();
+    ctx.ellipse(cx + 22*s2, cy - armWave, 5*s2, 4*s2, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // HP bar
+  if (hp < maxHp) {
+    const barW = type === 'king_boo' ? 60 : 28;
+    const barX = type === 'king_boo' ? Math.floor(x - 30) : bx;
+    const barY = type === 'king_boo' ? Math.floor(y - 55) : by - 6;
+    ctx.fillStyle = '#333';
+    ctx.fillRect(barX, barY, barW, 3);
+    ctx.fillStyle = type === 'king_boo' ? '#aa44ff' : '#ee3333';
+    ctx.fillRect(barX, barY, barW * (hp/maxHp), 3);
+  }
+}
+
+function drawItem(x, y, type, frame) {
+  const bx = Math.floor(x - 8);
+  const by = Math.floor(y - 8) + Math.sin(frame * 0.06) * 3;
+  if (type === 'crystal') {
+    ctx.fillStyle = '#66ddff';
+    ctx.beginPath();
+    ctx.moveTo(bx+8, by);
+    ctx.lineTo(bx+14, by+6);
+    ctx.lineTo(bx+8, by+16);
+    ctx.lineTo(bx+2, by+6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#aaeeff';
+    ctx.fillRect(bx+6, by+3, 3, 4);
+  } else if (type === 'heart') {
+    ctx.fillStyle = '#ff4466';
+    ctx.fillRect(bx+2, by+2, 5, 5);
+    ctx.fillRect(bx+9, by+2, 5, 5);
+    ctx.fillRect(bx+1, by+5, 14, 5);
+    ctx.fillRect(bx+3, by+10, 10, 3);
+    ctx.fillRect(bx+5, by+13, 6, 2);
+  } else if (type === 'key') {
+    ctx.fillStyle = '#ffcc00';
+    ctx.fillRect(bx+4, by, 8, 8);
+    ctx.fillRect(bx+6, by+2, 4, 4); ctx.fillStyle='#996600'; ctx.fillRect(bx+6, by+2, 4, 4);
+    ctx.fillStyle = '#ffcc00';
+    ctx.fillRect(bx+6, by+8, 4, 8);
+    ctx.fillRect(bx+8, by+12, 4, 2);
+    ctx.fillRect(bx+8, by+15, 4, 2);
+  } else if (type === 'shadow_crystal') {
+    // Purple-hued crystal for level 2
+    ctx.fillStyle = '#bb66ff';
+    ctx.beginPath();
+    ctx.moveTo(bx+8, by);
+    ctx.lineTo(bx+14, by+6);
+    ctx.lineTo(bx+8, by+16);
+    ctx.lineTo(bx+2, by+6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#dd99ff';
+    ctx.fillRect(bx+6, by+3, 3, 4);
+    // Glow
+    ctx.globalAlpha = 0.2 + Math.sin(frame*0.08)*0.1;
+    ctx.fillStyle = '#aa44ff';
+    ctx.beginPath();
+    ctx.ellipse(bx+8, by+8, 10, 10, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// --- TILE TYPES ---
+const T = {
+  FLOOR: 0, WALL: 1, TREE: 2, WATER: 3, DOOR: 4, LOCKED: 5,
+  GRASS: 6, PATH: 7, BUSH: 8, CAVE_FLOOR: 9, LAVA: 10,
+  // Shadow Temple tiles
+  SHADOW_FLOOR: 11, SHADOW_WALL: 12, SKULL_TILE: 13,
+  VOID: 14, TOMBSTONE: 15, PURPLE_FIRE: 16, BLOOD_POOL: 17,
+  SHADOW_BRICK: 18
+};
+
+function drawTile(col, row, type) {
+  const x = col * TILE, y = row * TILE;
+  switch(type) {
+    case T.FLOOR:
+      ctx.fillStyle = '#8B7355';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#7a6548';
+      ctx.fillRect(x+4,y+4,2,2);
+      ctx.fillRect(x+20,y+14,2,2);
+      ctx.fillRect(x+12,y+24,2,2);
+      break;
+    case T.WALL:
+      ctx.fillStyle = '#555566';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#444455';
+      ctx.fillRect(x+1,y+1,TILE-2,TILE-2);
+      ctx.fillStyle = '#666677';
+      ctx.fillRect(x+2,y+2,TILE-4,2);
+      ctx.fillRect(x+2,y+2,2,TILE-4);
+      break;
+    case T.TREE:
+      ctx.fillStyle = '#3a7a2a';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#2a5a1a';
+      ctx.fillRect(x+4,y+2,24,20);
+      ctx.fillStyle = '#3a8a2a';
+      ctx.fillRect(x+6,y+4,20,16);
+      ctx.fillStyle = '#664422';
+      ctx.fillRect(x+13,y+20,6,12);
+      break;
+    case T.WATER:
+      ctx.fillStyle = '#2255aa';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#3366bb';
+      const wOff = Math.sin((x+y+gameFrame)*0.04)*4;
+      ctx.fillRect(x+4+wOff,y+8,12,2);
+      ctx.fillRect(x+10-wOff,y+18,14,2);
+      break;
+    case T.DOOR:
+      ctx.fillStyle = '#8B7355';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#664422';
+      ctx.fillRect(x+4,y+0,24,TILE);
+      ctx.fillStyle = '#ffcc00';
+      ctx.fillRect(x+22,y+14,4,4);
+      break;
+    case T.LOCKED:
+      ctx.fillStyle = '#555566';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#884422';
+      ctx.fillRect(x+4,y+2,24,28);
+      ctx.fillStyle = '#ffcc00';
+      ctx.fillRect(x+13,y+12,6,8);
+      ctx.fillStyle = '#cc9900';
+      ctx.fillRect(x+14,y+18,4,6);
+      break;
+    case T.GRASS:
+      ctx.fillStyle = '#4a8a3a';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#3a7a2a';
+      ctx.fillRect(x+6,y+4,2,6);
+      ctx.fillRect(x+16,y+10,2,6);
+      ctx.fillRect(x+24,y+2,2,6);
+      ctx.fillRect(x+10,y+20,2,6);
+      break;
+    case T.PATH:
+      ctx.fillStyle = '#c8b888';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#b8a878';
+      ctx.fillRect(x+8,y+8,3,3);
+      ctx.fillRect(x+20,y+22,3,3);
+      break;
+    case T.BUSH:
+      ctx.fillStyle = '#4a8a3a';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#2a6a1a';
+      ctx.fillRect(x+2,y+4,28,24);
+      ctx.fillStyle = '#3a7a2a';
+      ctx.fillRect(x+4,y+6,24,20);
+      break;
+    case T.CAVE_FLOOR:
+      ctx.fillStyle = '#3a3a3a';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#333';
+      ctx.fillRect(x+8,y+12,3,3);
+      ctx.fillRect(x+22,y+6,2,2);
+      break;
+    case T.LAVA:
+      ctx.fillStyle = '#cc3300';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#ff6600';
+      const lOff = Math.sin((x+y+gameFrame)*0.06)*3;
+      ctx.fillRect(x+6+lOff,y+6,10,6);
+      ctx.fillRect(x+14-lOff,y+18,8,6);
+      break;
+
+    // ========== SHADOW TEMPLE TILES ==========
+    case T.SHADOW_FLOOR:
+      ctx.fillStyle = '#1a1420';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#221a2e';
+      ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
+      // Subtle cracks
+      ctx.fillStyle = '#14101a';
+      ctx.fillRect(x+8,y+6,1,8);
+      ctx.fillRect(x+18,y+16,1,10);
+      ctx.fillRect(x+4,y+22,8,1);
+      break;
+    case T.SHADOW_WALL:
+      ctx.fillStyle = '#2a1e3a';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#221838';
+      ctx.fillRect(x+1,y+1,TILE-2,TILE-2);
+      // Brick lines
+      ctx.fillStyle = '#1a1228';
+      ctx.fillRect(x, y+10, TILE, 1);
+      ctx.fillRect(x, y+21, TILE, 1);
+      ctx.fillRect(x+16, y, 1, 10);
+      ctx.fillRect(x+8, y+11, 1, 10);
+      ctx.fillRect(x+20, y+22, 1, 10);
+      // Highlight edge
+      ctx.fillStyle = '#3a2a4a';
+      ctx.fillRect(x+2,y+2,TILE-4,1);
+      ctx.fillRect(x+2,y+2,1,TILE-4);
+      break;
+    case T.SKULL_TILE:
+      // Floor with skull decoration
+      ctx.fillStyle = '#1a1420';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#2a2030';
+      ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
+      // Mini skull
+      ctx.fillStyle = '#aaa8a0';
+      ctx.fillRect(x+10,y+6,12,10);
+      ctx.fillRect(x+12,y+4,8,4);
+      // Eye sockets
+      ctx.fillStyle = '#1a1420';
+      ctx.fillRect(x+12,y+8,3,3);
+      ctx.fillRect(x+18,y+8,3,3);
+      // Nose
+      ctx.fillRect(x+15,y+12,2,2);
+      // Jaw
+      ctx.fillStyle = '#999890';
+      ctx.fillRect(x+12,y+16,8,4);
+      ctx.fillStyle = '#1a1420';
+      ctx.fillRect(x+14,y+17,1,2);
+      ctx.fillRect(x+17,y+17,1,2);
+      break;
+    case T.VOID:
+      // Bottomless pit
+      ctx.fillStyle = '#060408';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#0a060e';
+      const vOff = Math.sin((x+y+gameFrame)*0.03)*2;
+      ctx.fillRect(x+4+vOff,y+4,8,8);
+      ctx.fillRect(x+14-vOff,y+14,10,10);
+      // Purple edge glow
+      ctx.globalAlpha = 0.2;
+      ctx.fillStyle = '#6622aa';
+      ctx.fillRect(x,y,TILE,2);
+      ctx.fillRect(x,y,2,TILE);
+      ctx.fillRect(x+TILE-2,y,2,TILE);
+      ctx.fillRect(x,y+TILE-2,TILE,2);
+      ctx.globalAlpha = 1;
+      break;
+    case T.TOMBSTONE:
+      // Floor with tombstone
+      ctx.fillStyle = '#1a1420';
+      ctx.fillRect(x,y,TILE,TILE);
+      // Stone
+      ctx.fillStyle = '#666068';
+      ctx.fillRect(x+8,y+6,16,20);
+      ctx.fillRect(x+10,y+4,12,4);
+      // Rounded top
+      ctx.fillRect(x+12,y+2,8,4);
+      // Cross / RIP
+      ctx.fillStyle = '#555058';
+      ctx.fillRect(x+14,y+8,4,10);
+      ctx.fillRect(x+11,y+11,10,3);
+      break;
+    case T.PURPLE_FIRE:
+      // Damaging purple flame
+      ctx.fillStyle = '#1a1420';
+      ctx.fillRect(x,y,TILE,TILE);
+      const f1 = Math.sin(gameFrame*0.12 + x)*4;
+      const f2 = Math.sin(gameFrame*0.15 + y)*3;
+      // Outer flame
+      ctx.fillStyle = '#6622aa';
+      ctx.fillRect(x+6+f2, y+4+f1, 8, 18);
+      ctx.fillRect(x+14-f2, y+6-f1, 8, 16);
+      ctx.fillRect(x+4, y+10+f1, 24, 12);
+      // Inner flame
+      ctx.fillStyle = '#9944dd';
+      ctx.fillRect(x+10+f1, y+8, 6, 12);
+      ctx.fillRect(x+14-f1, y+10, 6, 10);
+      // Bright center
+      ctx.fillStyle = '#cc88ff';
+      ctx.fillRect(x+12, y+14+f2, 4, 6);
+      break;
+    case T.BLOOD_POOL:
+      // Dark reddish pool (more like shadow ooze)
+      ctx.fillStyle = '#1a1420';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#3a1028';
+      ctx.beginPath();
+      ctx.ellipse(x+TILE/2, y+TILE/2, 13, 11, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#4a1838';
+      const bpOff = Math.sin((x+y+gameFrame)*0.04)*2;
+      ctx.beginPath();
+      ctx.ellipse(x+TILE/2+bpOff, y+TILE/2, 8, 6, 0, 0, Math.PI*2);
+      ctx.fill();
+      break;
+    case T.SHADOW_BRICK:
+      // Decorative dark brick — walkable
+      ctx.fillStyle = '#201830';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#281e38';
+      ctx.fillRect(x+1,y+1,14,9);
+      ctx.fillRect(x+17,y+1,14,9);
+      ctx.fillRect(x+8,y+12,14,9);
+      ctx.fillRect(x+1,y+23,14,8);
+      ctx.fillRect(x+17,y+23,14,8);
+      break;
+  }
+}
+
+// --- ROOMS ---
+function solidWalls(base) {
+  const m = [];
+  for (let r=0; r<ROWS; r++) {
+    m[r] = [];
+    for (let c=0; c<COLS; c++) {
+      if (r===0||r===ROWS-1||c===0||c===COLS-1) m[r][c] = T.WALL;
+      else m[r][c] = base;
+    }
+  }
+  return m;
+}
+
+function solidShadowWalls(base) {
+  const m = [];
+  for (let r=0; r<ROWS; r++) {
+    m[r] = [];
+    for (let c=0; c<COLS; c++) {
+      if (r===0||r===ROWS-1||c===0||c===COLS-1) m[r][c] = T.SHADOW_WALL;
+      else m[r][c] = base;
+    }
+  }
+  return m;
+}
+
+function addDoors(m, dirs) {
+  const midC = Math.floor(COLS/2);
+  const midR = Math.floor(ROWS/2);
+  if (dirs.includes('up'))    { m[0][midC] = T.DOOR; m[0][midC-1] = T.DOOR; }
+  if (dirs.includes('down'))  { m[ROWS-1][midC] = T.DOOR; m[ROWS-1][midC-1] = T.DOOR; }
+  if (dirs.includes('left'))  { m[midR][0] = T.DOOR; m[midR-1][0] = T.DOOR; }
+  if (dirs.includes('right')) { m[midR][COLS-1] = T.DOOR; m[midR-1][COLS-1] = T.DOOR; }
+}
+
+function addLockedDoor(m, dir) {
+  const midC = Math.floor(COLS/2);
+  const midR = Math.floor(ROWS/2);
+  if (dir==='up')    { m[0][midC]=T.LOCKED; m[0][midC-1]=T.LOCKED; }
+  if (dir==='down')  { m[ROWS-1][midC]=T.LOCKED; m[ROWS-1][midC-1]=T.LOCKED; }
+  if (dir==='left')  { m[midR][0]=T.LOCKED; m[midR-1][0]=T.LOCKED; }
+  if (dir==='right') { m[midR][COLS-1]=T.LOCKED; m[midR-1][COLS-1]=T.LOCKED; }
+}
+
+// Build rooms
+function buildRooms() {
+  // ===================== LEVEL 1 =====================
+
+  // Room 0: Starting Meadow
+  const r0 = solidWalls(T.GRASS);
+  for(let c=8;c<12;c++){r0[7][c]=T.PATH;r0[8][c]=T.PATH;}
+  for(let r=2;r<6;r++){r0[r][3]=T.TREE;r0[r][16]=T.TREE;}
+  r0[4][7]=T.BUSH; r0[4][12]=T.BUSH;
+  r0[10][5]=T.WATER; r0[10][6]=T.WATER; r0[11][5]=T.WATER; r0[11][6]=T.WATER;
+  addDoors(r0, ['up','right']);
+
+  // Room 1: Forest Path
+  const r1 = solidWalls(T.GRASS);
+  for(let c=2;c<18;c++) r1[7][c]=T.PATH;
+  for(let r=2;r<13;r++){r1[r][4]=T.TREE; r1[r][8]=T.TREE; r1[r][14]=T.TREE; r1[r][17]=T.TREE;}
+  r1[3][6]=T.BUSH;r1[5][11]=T.BUSH;r1[10][6]=T.BUSH;r1[11][12]=T.BUSH;
+  addDoors(r1, ['left','up']);
+
+  // Room 2: Lake Shore
+  const r2 = solidWalls(T.GRASS);
+  for(let r=3;r<12;r++) for(let c=3;c<10;c++) r2[r][c]=T.WATER;
+  for(let c=10;c<18;c++){r2[6][c]=T.PATH;r2[7][c]=T.PATH;}
+  r2[2][12]=T.TREE;r2[2][15]=T.TREE;r2[11][12]=T.TREE;r2[11][15]=T.TREE;
+  addDoors(r2, ['down','right']);
+
+  // Room 3: Cave Entrance
+  const r3 = solidWalls(T.GRASS);
+  for(let r=2;r<13;r++) for(let c=6;c<14;c++) r3[r][c]=T.CAVE_FLOOR;
+  for(let c=6;c<14;c++){r3[2][c]=T.WALL;r3[12][c]=T.WALL;}
+  for(let r=2;r<13;r++){r3[r][6]=T.WALL;r3[r][13]=T.WALL;}
+  r3[7][6]=T.DOOR;r3[6][6]=T.DOOR;
+  r3[2][9]=T.DOOR;r3[2][10]=T.DOOR;
+  addDoors(r3, ['down','left']);
+  addLockedDoor(r3, 'up');
+
+  // Room 4: Dungeon Hall
+  const r4 = solidWalls(T.CAVE_FLOOR);
+  for(let c=2;c<18;c++){r4[3][c]=T.WALL;r4[11][c]=T.WALL;}
+  r4[3][9]=T.CAVE_FLOOR;r4[3][10]=T.CAVE_FLOOR;
+  r4[11][9]=T.CAVE_FLOOR;r4[11][10]=T.CAVE_FLOOR;
+  r4[7][5]=T.LAVA;r4[7][6]=T.LAVA;r4[7][13]=T.LAVA;r4[7][14]=T.LAVA;
+  addDoors(r4, ['down','up']);
+
+  // Room 5: Boss Chamber (Level 1)
+  const r5 = solidWalls(T.CAVE_FLOOR);
+  for(let c=2;c<18;c++){r5[2][c]=T.WALL;}
+  r5[2][9]=T.CAVE_FLOOR;r5[2][10]=T.CAVE_FLOOR;
+  for(let r=4;r<11;r++){r5[r][4]=T.LAVA;r5[r][15]=T.LAVA;}
+  r5[6][7]=T.LAVA;r5[6][12]=T.LAVA;
+  addDoors(r5, ['down']);
+
+  // ===================== LEVEL 2: THE SHADOW TEMPLE =====================
+
+  // Room 6: Shadow Temple Entrance
+  const r6 = solidShadowWalls(T.SHADOW_FLOOR);
+  // Columns of shadow brick
+  for(let r=2;r<13;r++){
+    r6[r][4] = T.SHADOW_WALL; r6[r][15] = T.SHADOW_WALL;
+  }
+  // Central pathway of shadow brick
+  for(let c=6;c<14;c++){r6[7][c]=T.SHADOW_BRICK; r6[8][c]=T.SHADOW_BRICK;}
+  // Tombstones flanking
+  r6[3][7]=T.TOMBSTONE; r6[3][12]=T.TOMBSTONE;
+  r6[11][7]=T.TOMBSTONE; r6[11][12]=T.TOMBSTONE;
+  // Purple fires at entrance
+  r6[3][5]=T.PURPLE_FIRE; r6[3][14]=T.PURPLE_FIRE;
+  r6[11][5]=T.PURPLE_FIRE; r6[11][14]=T.PURPLE_FIRE;
+  addDoors(r6, ['up','right']);
+
+  // Room 7: Hall of Whispers (wide hall with void pits)
+  const r7 = solidShadowWalls(T.SHADOW_FLOOR);
+  // Void pits on sides
+  for(let r=3;r<6;r++){
+    for(let c=2;c<5;c++) r7[r][c]=T.VOID;
+    for(let c=15;c<18;c++) r7[r][c]=T.VOID;
+  }
+  for(let r=9;r<12;r++){
+    for(let c=2;c<5;c++) r7[r][c]=T.VOID;
+    for(let c=15;c<18;c++) r7[r][c]=T.VOID;
+  }
+  // Center path with skull tiles
+  r7[7][9]=T.SKULL_TILE; r7[7][10]=T.SKULL_TILE;
+  r7[4][9]=T.SKULL_TILE; r7[10][10]=T.SKULL_TILE;
+  // Blood pools
+  r7[5][8]=T.BLOOD_POOL; r7[9][11]=T.BLOOD_POOL;
+  // Purple fire pillars
+  r7[3][7]=T.PURPLE_FIRE; r7[3][12]=T.PURPLE_FIRE;
+  r7[11][7]=T.PURPLE_FIRE; r7[11][12]=T.PURPLE_FIRE;
+  addDoors(r7, ['left','up']);
+
+  // Room 8: Crypt of Shadows (contains key)
+  const r8 = solidShadowWalls(T.SHADOW_FLOOR);
+  // Inner chamber walls
+  for(let c=5;c<15;c++){r8[3][c]=T.SHADOW_WALL; r8[11][c]=T.SHADOW_WALL;}
+  for(let r=3;r<12;r++){r8[r][5]=T.SHADOW_WALL; r8[r][14]=T.SHADOW_WALL;}
+  // Open the chamber
+  r8[3][9]=T.SHADOW_FLOOR; r8[3][10]=T.SHADOW_FLOOR;
+  r8[11][9]=T.SHADOW_FLOOR; r8[11][10]=T.SHADOW_FLOOR;
+  r8[7][5]=T.SHADOW_FLOOR; r8[6][5]=T.SHADOW_FLOOR;
+  // Inside: shadow brick floor
+  for(let r=4;r<11;r++) for(let c=6;c<14;c++) r8[r][c]=T.SHADOW_BRICK;
+  // Skull tiles around the key area
+  r8[7][9]=T.SKULL_TILE; r8[7][10]=T.SKULL_TILE;
+  r8[6][9]=T.SKULL_TILE; r8[6][10]=T.SKULL_TILE;
+  // Tombstones
+  r8[5][7]=T.TOMBSTONE; r8[5][12]=T.TOMBSTONE;
+  r8[9][7]=T.TOMBSTONE; r8[9][12]=T.TOMBSTONE;
+  addDoors(r8, ['down','right']);
+
+  // Room 9: Shadow Maze (connecting room with locked door to boss wing)
+  const r9 = solidShadowWalls(T.SHADOW_FLOOR);
+  // Maze-like walls
+  for(let r=2;r<6;r++) r9[r][4]=T.SHADOW_WALL;
+  for(let r=2;r<6;r++) r9[r][9]=T.SHADOW_WALL;
+  for(let c=4;c<10;c++) r9[5][c]=T.SHADOW_WALL;
+  r9[5][7]=T.SHADOW_FLOOR; // gap
+  for(let r=8;r<13;r++) r9[r][10]=T.SHADOW_WALL;
+  for(let r=8;r<13;r++) r9[r][15]=T.SHADOW_WALL;
+  for(let c=10;c<16;c++) r9[8][c]=T.SHADOW_WALL;
+  r9[8][12]=T.SHADOW_FLOOR; // gap
+  // Void pits as hazards
+  r9[3][6]=T.VOID; r9[3][7]=T.VOID;
+  r9[10][12]=T.VOID; r9[10][13]=T.VOID;
+  // Purple fires
+  r9[2][2]=T.PURPLE_FIRE; r9[12][17]=T.PURPLE_FIRE;
+  addDoors(r9, ['left','down']);
+  addLockedDoor(r9, 'up');
+
+  // Room 10: Shadow Gauntlet (tough room before boss)
+  const r10 = solidShadowWalls(T.SHADOW_FLOOR);
+  // Corridors with hazards
+  for(let c=2;c<18;c++){r10[4][c]=T.SHADOW_WALL; r10[10][c]=T.SHADOW_WALL;}
+  r10[4][9]=T.SHADOW_FLOOR; r10[4][10]=T.SHADOW_FLOOR;
+  r10[10][9]=T.SHADOW_FLOOR; r10[10][10]=T.SHADOW_FLOOR;
+  // Void pits in corridors
+  r10[7][4]=T.VOID; r10[7][5]=T.VOID; r10[7][14]=T.VOID; r10[7][15]=T.VOID;
+  // Purple fires
+  r10[6][7]=T.PURPLE_FIRE; r10[6][12]=T.PURPLE_FIRE;
+  r10[8][7]=T.PURPLE_FIRE; r10[8][12]=T.PURPLE_FIRE;
+  // Skull decorations
+  r10[2][5]=T.SKULL_TILE; r10[2][14]=T.SKULL_TILE;
+  r10[12][5]=T.SKULL_TILE; r10[12][14]=T.SKULL_TILE;
+  addDoors(r10, ['down','up']);
+
+  // Room 11: King Boo's Throne Room
+  const r11 = solidShadowWalls(T.SHADOW_BRICK);
+  // Outer ring of shadow floor
+  for(let r=2;r<13;r++){
+    r11[r][2]=T.SHADOW_FLOOR; r11[r][17]=T.SHADOW_FLOOR;
+  }
+  for(let c=2;c<18;c++){
+    r11[2][c]=T.SHADOW_FLOOR; r11[12][c]=T.SHADOW_FLOOR;
+  }
+  // Void corners
+  for(let r=2;r<5;r++){
+    for(let c=2;c<5;c++) r11[r][c]=T.VOID;
+    for(let c=15;c<18;c++) r11[r][c]=T.VOID;
+  }
+  for(let r=10;r<13;r++){
+    for(let c=2;c<5;c++) r11[r][c]=T.VOID;
+    for(let c=15;c<18;c++) r11[r][c]=T.VOID;
+  }
+  // Purple fire pillars
+  r11[3][6]=T.PURPLE_FIRE; r11[3][13]=T.PURPLE_FIRE;
+  r11[11][6]=T.PURPLE_FIRE; r11[11][13]=T.PURPLE_FIRE;
+  r11[7][3]=T.PURPLE_FIRE; r11[7][16]=T.PURPLE_FIRE;
+  // Skull throne area at top
+  r11[2][9]=T.SKULL_TILE; r11[2][10]=T.SKULL_TILE;
+  r11[3][9]=T.SKULL_TILE; r11[3][10]=T.SKULL_TILE;
+  // Blood pools for atmosphere
+  r11[9][7]=T.BLOOD_POOL; r11[9][12]=T.BLOOD_POOL;
+  addDoors(r11, ['down']);
+
+  return [r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11];
+}
+
+// Room connections: [roomIndex, exitDir] => [newRoom, entryDir, spawnX, spawnY]
+const connections = {
+  // Level 1
+  '0-up':    [2, 'down', W/2, H-50],
+  '0-right': [1, 'left', 50, H/2],
+  '1-left':  [0, 'right', W-50, H/2],
+  '1-up':    [3, 'down', W/2, H-50],
+  '2-down':  [0, 'up', W/2, 50],
+  '2-right': [3, 'left', 50, H/2],
+  '3-left':  [2, 'right', W-50, H/2],
+  '3-down':  [1, 'up', W/2, 50],
+  '3-up':    [4, 'down', W/2, H-50],
+  '4-down':  [3, 'up', W/2, 50],
+  '4-up':    [5, 'down', W/2, H-50],
+  '5-down':  [4, 'up', W/2, 50],
+
+  // Level 2
+  '6-up':    [8, 'down', W/2, H-50],
+  '6-right': [7, 'left', 50, H/2],
+  '7-left':  [6, 'right', W-50, H/2],
+  '7-up':    [9, 'down', W/2, H-50],
+  '8-down':  [6, 'up', W/2, 50],
+  '8-right': [9, 'left', 50, H/2],
+  '9-left':  [8, 'right', W-50, H/2],
+  '9-down':  [7, 'up', W/2, 50],
+  '9-up':    [10, 'down', W/2, H-50],
+  '10-down': [9, 'up', W/2, 50],
+  '10-up':   [11, 'down', W/2, H-50],
+  '11-down': [10, 'up', W/2, 50],
+};
+
+// --- ROOM ENEMIES & ITEMS ---
+function spawnRoomEntities(roomIdx) {
+  const enemies = [];
+  const items = [];
+  switch(roomIdx) {
+    case 0:
+      items.push({x:320,y:240,type:'crystal'},{x:160,y:160,type:'crystal'});
+      enemies.push({x:400,y:300,type:'slime',hp:2,maxHp:2,vx:0.5,vy:0.3,timer:0});
+      break;
+    case 1:
+      enemies.push(
+        {x:200,y:200,type:'slime',hp:2,maxHp:2,vx:-0.6,vy:0.4,timer:0},
+        {x:400,y:350,type:'slime',hp:2,maxHp:2,vx:0.5,vy:-0.5,timer:0},
+        {x:300,y:150,type:'bat',hp:1,maxHp:1,vx:1,vy:0.8,timer:0}
+      );
+      items.push({x:500,y:200,type:'crystal'},{x:150,y:350,type:'crystal'});
+      break;
+    case 2:
+      enemies.push(
+        {x:450,y:150,type:'bat',hp:1,maxHp:1,vx:0.8,vy:-0.6,timer:0},
+        {x:500,y:350,type:'bat',hp:1,maxHp:1,vx:-0.7,vy:0.7,timer:0}
+      );
+      items.push({x:400,y:100,type:'heart'},{x:550,y:250,type:'crystal'});
+      break;
+    case 3:
+      enemies.push(
+        {x:280,y:260,type:'skeleton',hp:3,maxHp:3,vx:0.4,vy:-0.3,timer:0},
+        {x:360,y:180,type:'skeleton',hp:3,maxHp:3,vx:-0.3,vy:0.4,timer:0}
+      );
+      items.push({x:320,y:340,type:'key'},{x:320,y:100,type:'crystal'});
+      break;
+    case 4:
+      enemies.push(
+        {x:200,y:240,type:'skeleton',hp:3,maxHp:3,vx:0.5,vy:0.3,timer:0},
+        {x:440,y:240,type:'skeleton',hp:3,maxHp:3,vx:-0.5,vy:-0.3,timer:0},
+        {x:320,y:180,type:'bat',hp:1,maxHp:1,vx:1,vy:1,timer:0},
+        {x:320,y:300,type:'bat',hp:1,maxHp:1,vx:-1,vy:-1,timer:0}
+      );
+      items.push({x:320,y:240,type:'heart'},{x:160,y:120,type:'crystal'},{x:480,y:360,type:'crystal'});
+      break;
+    case 5:
+      enemies.push(
+        {x:320,y:200,type:'boss',hp:12,maxHp:12,vx:0.6,vy:0.4,timer:0}
+      );
+      items.push({x:320,y:100,type:'crystal'},{x:200,y:300,type:'crystal'},{x:440,y:300,type:'crystal'});
+      break;
+
+    // ========== LEVEL 2: SHADOW TEMPLE ==========
+    case 6:
+      // Entrance — ghosts and shadow crystals
+      enemies.push(
+        {x:200,y:200,type:'ghost',hp:2,maxHp:2,vx:0.5,vy:0.3,timer:0},
+        {x:450,y:300,type:'ghost',hp:2,maxHp:2,vx:-0.4,vy:0.5,timer:0}
+      );
+      items.push(
+        {x:320,y:240,type:'shadow_crystal'},
+        {x:500,y:160,type:'shadow_crystal'}
+      );
+      break;
+    case 7:
+      // Hall of Whispers — wraiths and ghosts
+      enemies.push(
+        {x:300,y:200,type:'wraith',hp:4,maxHp:4,vx:0.3,vy:-0.2,timer:0},
+        {x:350,y:350,type:'ghost',hp:2,maxHp:2,vx:-0.5,vy:0.6,timer:0},
+        {x:500,y:200,type:'ghost',hp:2,maxHp:2,vx:0.4,vy:-0.4,timer:0}
+      );
+      items.push(
+        {x:320,y:120,type:'shadow_crystal'},
+        {x:160,y:350,type:'shadow_crystal'}
+      );
+      break;
+    case 8:
+      // Crypt of Shadows — key room with tough enemies
+      enemies.push(
+        {x:320,y:240,type:'wraith',hp:4,maxHp:4,vx:-0.3,vy:0.3,timer:0},
+        {x:240,y:300,type:'shadow_hand',hp:3,maxHp:3,vx:0,vy:0,timer:0},
+        {x:400,y:300,type:'shadow_hand',hp:3,maxHp:3,vx:0,vy:0,timer:0}
+      );
+      items.push(
+        {x:320,y:200,type:'key'},
+        {x:320,y:340,type:'heart'},
+        {x:200,y:160,type:'shadow_crystal'}
+      );
+      break;
+    case 9:
+      // Shadow Maze — navigational challenge
+      enemies.push(
+        {x:160,y:160,type:'ghost',hp:2,maxHp:2,vx:0.6,vy:0.4,timer:0},
+        {x:450,y:350,type:'wraith',hp:4,maxHp:4,vx:-0.4,vy:-0.3,timer:0},
+        {x:320,y:240,type:'ghost',hp:2,maxHp:2,vx:-0.3,vy:0.6,timer:0}
+      );
+      items.push(
+        {x:160,y:380,type:'shadow_crystal'},
+        {x:480,y:120,type:'heart'}
+      );
+      break;
+    case 10:
+      // Shadow Gauntlet — hard room before boss
+      enemies.push(
+        {x:200,y:240,type:'wraith',hp:4,maxHp:4,vx:0.4,vy:0.3,timer:0},
+        {x:440,y:240,type:'wraith',hp:4,maxHp:4,vx:-0.4,vy:-0.3,timer:0},
+        {x:320,y:160,type:'shadow_hand',hp:3,maxHp:3,vx:0,vy:0,timer:0},
+        {x:320,y:340,type:'ghost',hp:2,maxHp:2,vx:0.5,vy:-0.5,timer:0}
+      );
+      items.push(
+        {x:320,y:240,type:'heart'},
+        {x:160,y:120,type:'shadow_crystal'},
+        {x:480,y:360,type:'shadow_crystal'}
+      );
+      break;
+    case 11:
+      // King Boo's Throne Room
+      enemies.push(
+        {x:320,y:180,type:'king_boo',hp:20,maxHp:20,vx:0.5,vy:0.3,timer:0,phase:1}
+      );
+      items.push(
+        {x:160,y:400,type:'shadow_crystal'},
+        {x:480,y:400,type:'shadow_crystal'},
+        {x:320,y:400,type:'heart'}
+      );
+      break;
+  }
+  return { enemies, items };
+}
+
+// --- GAME STATE ---
+let gameStarted = false;
+let gameFrame = 0;
+let currentLevel = 1;
+let levelTransitioning = false;
+let player = { x:320, y:360, dir:'up', hp:20, maxHp:20, keys:0, crystals:0, attacking:0, invuln:0, speed:2.5 };
+let currentRoom = 0;
+let rooms = buildRooms();
+let entities = spawnRoomEntities(0);
+let roomCleared = {};
+let particles = [];
+let messages = [];
+let gameWon = false;
+let shakeDur = 0;
+// Fog particles for shadow temple rooms
+let fogParticles = [];
+
+const keys_pressed = {};
+let touchDirs = {};
+let touchAttack = false;
+
+// Initialize fog for level 2 rooms
+function initFog() {
+  fogParticles = [];
+  for (let i = 0; i < 30; i++) {
+    fogParticles.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      size: 30 + Math.random() * 60,
+      speed: 0.2 + Math.random() * 0.3,
+      alpha: 0.03 + Math.random() * 0.06
+    });
+  }
+}
+initFog();
+
+// --- HUD ---
+function updateHUD() {
+  let hStr = '';
+  for(let i=0;i<player.maxHp/2;i++) {
+    if (player.hp >= (i+1)*2) hStr += '❤️';
+    else if (player.hp >= i*2+1) hStr += '💔';
+    else hStr += '🖤';
+  }
+  document.getElementById('hearts').textContent = hStr;
+  document.getElementById('keys').textContent = '🗝️'.repeat(player.keys);
+  document.getElementById('score').textContent = 'CRYSTALS: ' + player.crystals;
+  const names = ['Meadow','Forest','Lake','Cave','Dungeon','Boss Lair',
+                 'Temple Entry','Whisper Hall','Crypt','Shadow Maze','Gauntlet','Throne Room'];
+  document.getElementById('room').textContent = names[currentRoom] || '';
+}
+
+// --- COLLISION ---
+function isSolid(px, py, ignoreDoors) {
+  const c = Math.floor(px/TILE);
+  const r = Math.floor(py/TILE);
+  if (c<0||c>=COLS||r<0||r>=ROWS) {
+    const cc = Math.max(0, Math.min(COLS-1, c));
+    const rr = Math.max(0, Math.min(ROWS-1, r));
+    const t = rooms[currentRoom][rr][cc];
+    return t !== T.DOOR;
+  }
+  const t = rooms[currentRoom][r][c];
+  if (t===T.WALL||t===T.TREE||t===T.BUSH||t===T.WATER||t===T.LAVA||
+      t===T.SHADOW_WALL||t===T.VOID||t===T.TOMBSTONE||t===T.PURPLE_FIRE||t===T.BLOOD_POOL) return true;
+  if (t===T.LOCKED) {
+    if (player.keys > 0) {
+      player.keys--;
+      rooms[currentRoom][r][c] = T.DOOR;
+      addMsg('Door unlocked!');
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+// Check if player is on a damaging tile
+function checkTileDamage() {
+  const c = Math.floor(player.x / TILE);
+  const r = Math.floor(player.y / TILE);
+  if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+  // No tile damage needed since purple fire / lava / void are solid
+}
+
+function addMsg(txt) {
+  messages.push({ txt, timer: 120 });
+}
+
+function spawnParticles(x,y,color,count) {
+  for(let i=0;i<count;i++){
+    particles.push({
+      x, y,
+      vx: (Math.random()-0.5)*3,
+      vy: (Math.random()-0.5)*3,
+      life: 20+Math.random()*15,
+      color
+    });
+  }
+}
+
+// --- ROOM TRANSITIONS ---
+function checkRoomExit() {
+  let exitDir = null;
+  if (player.y < 8) exitDir = 'up';
+  else if (player.y > H-8) exitDir = 'down';
+  else if (player.x < 8) exitDir = 'left';
+  else if (player.x > W-8) exitDir = 'right';
+
+  if (!exitDir) return;
+  const key = currentRoom+'-'+exitDir;
+  const conn = connections[key];
+  if (!conn) {
+    if(exitDir==='up') player.y=10;
+    if(exitDir==='down') player.y=H-10;
+    if(exitDir==='left') player.x=10;
+    if(exitDir==='right') player.x=W-10;
+    return;
+  }
+  if (entities.enemies.length === 0) roomCleared[currentRoom] = true;
+
+  currentRoom = conn[0];
+  player.x = conn[2];
+  player.y = conn[3];
+
+  if (roomCleared[currentRoom]) {
+    entities = { enemies: [], items: [] };
+  } else {
+    entities = spawnRoomEntities(currentRoom);
+  }
+  particles = [];
+}
+
+// --- LEVEL TRANSITION ---
+function startLevel2() {
+  levelTransitioning = true;
+  currentLevel = 2;
+  document.getElementById('levelTransition').style.display = 'flex';
+}
+
+function continueToLevel2() {
+  levelTransitioning = false;
+  document.getElementById('levelTransition').style.display = 'none';
+  currentRoom = 6;
+  player.x = 320;
+  player.y = 360;
+  player.hp = player.maxHp;
+  player.invuln = 60;
+  entities = spawnRoomEntities(6);
+  particles = [];
+  messages = [];
+  addMsg('The Shadow Temple awaits...');
+  updateHUD();
+}
+
+// --- SWORD HITBOX ---
+function getSwordRect() {
+  const sLen = 24, sW = 16;
+  let sx,sy,sw,sh;
+  if (player.dir==='up')    { sx=player.x-sW/2; sy=player.y-14-sLen; sw=sW; sh=sLen; }
+  else if(player.dir==='down') { sx=player.x-sW/2; sy=player.y+14; sw=sW; sh=sLen; }
+  else if(player.dir==='left') { sx=player.x-14-sLen; sy=player.y-sW/2; sw=sLen; sh=sW; }
+  else { sx=player.x+14; sy=player.y-sW/2; sw=sLen; sh=sW; }
+  return {x:sx,y:sy,w:sw,h:sh};
+}
+
+function rectsOverlap(a,b) {
+  return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y;
+}
+
+// --- UPDATE ---
+function update() {
+  if (!gameStarted || gameWon || levelTransitioning) return;
+  gameFrame++;
+
+  // Player movement
+  let dx=0, dy=0;
+  if (keys_pressed['ArrowUp']||keys_pressed['KeyW']||touchDirs.up) { dy=-1; player.dir='up'; }
+  if (keys_pressed['ArrowDown']||keys_pressed['KeyS']||touchDirs.down) { dy=1; player.dir='down'; }
+  if (keys_pressed['ArrowLeft']||keys_pressed['KeyA']||touchDirs.left) { dx=-1; player.dir='left'; }
+  if (keys_pressed['ArrowRight']||keys_pressed['KeyD']||touchDirs.right) { dx=1; player.dir='right'; }
+
+  if (dx&&dy){dx*=0.707;dy*=0.707;}
+  const nx = player.x + dx*player.speed;
+  const ny = player.y + dy*player.speed;
+  const pad = 8;
+  if (!isSolid(nx-pad,player.y-pad)&&!isSolid(nx+pad,player.y-pad)&&
+      !isSolid(nx-pad,player.y+pad)&&!isSolid(nx+pad,player.y+pad)) player.x=nx;
+  if (!isSolid(player.x-pad,ny-pad)&&!isSolid(player.x+pad,ny-pad)&&
+      !isSolid(player.x-pad,ny+pad)&&!isSolid(player.x+pad,ny+pad)) player.y=ny;
+
+  // Attacking
+  if (player.attacking > 0) player.attacking--;
+  if ((keys_pressed['Space']||keys_pressed['KeyX']||touchAttack) && player.attacking===0) {
+    player.attacking = 15;
+  }
+
+  // Invulnerability
+  if (player.invuln > 0) player.invuln--;
+
+  // Sword hits
+  if (player.attacking === 14) {
+    const sr = getSwordRect();
+    entities.enemies.forEach(e => {
+      const hitSize = (e.type === 'king_boo') ? 40 : 14;
+      const er = {x:e.x-hitSize,y:e.y-hitSize,w:hitSize*2,h:hitSize*2};
+      if (rectsOverlap(sr,er)) {
+        e.hp--;
+        spawnParticles(e.x,e.y,'#ffcc00',6);
+        shakeDur = 4;
+
+        // King Boo phase transitions
+        if (e.type === 'king_boo') {
+          spawnParticles(e.x, e.y, '#aa44ff', 8);
+          if (e.hp <= 10 && e.phase === 1) {
+            e.phase = 2;
+            addMsg('King Boo is enraged!');
+            // Spawn ghost minions
+            entities.enemies.push(
+              {x:150,y:150,type:'ghost',hp:2,maxHp:2,vx:0.6,vy:0.4,timer:0},
+              {x:490,y:150,type:'ghost',hp:2,maxHp:2,vx:-0.6,vy:0.4,timer:0}
+            );
+          }
+          if (e.hp <= 5 && e.phase === 2) {
+            e.phase = 3;
+            addMsg('King Boo unleashes shadows!');
+            entities.enemies.push(
+              {x:150,y:350,type:'wraith',hp:3,maxHp:3,vx:0.4,vy:-0.3,timer:0},
+              {x:490,y:350,type:'wraith',hp:3,maxHp:3,vx:-0.4,vy:-0.3,timer:0}
+            );
+          }
+        }
+
+        if (e.hp <= 0) {
+          spawnParticles(e.x,e.y,'#ff4444',12);
+          if (e.type === 'boss' && currentLevel === 1) {
+            // Level 1 boss defeated — transition to level 2
+            addMsg('The darkness calls from below...');
+            setTimeout(() => startLevel2(), 1500);
+          }
+          if (e.type === 'king_boo') {
+            gameWon = true;
+            spawnParticles(e.x, e.y, '#dd44ff', 30);
+            spawnParticles(e.x, e.y, '#ffffff', 20);
+            addMsg('KING BOO IS VANQUISHED!');
+          }
+        }
+      }
+    });
+    entities.enemies = entities.enemies.filter(e=>e.hp>0);
+  }
+
+  // Enemy AI
+  entities.enemies.forEach(e => {
+    e.timer++;
+
+    if (e.type==='slime') {
+      e.x += e.vx; e.y += e.vy;
+      if(e.timer%90===0){e.vx=-e.vx;e.vy=-e.vy;}
+    } else if (e.type==='bat') {
+      e.x += Math.sin(e.timer*0.05)*1.5 + e.vx*0.3;
+      e.y += Math.cos(e.timer*0.04)*1.2 + e.vy*0.3;
+      if(e.timer%70===0){e.vx=-e.vx;e.vy=-e.vy;}
+    } else if (e.type==='skeleton') {
+      const ang = Math.atan2(player.y-e.y, player.x-e.x);
+      e.x += Math.cos(ang)*0.7;
+      e.y += Math.sin(ang)*0.7;
+    } else if (e.type==='boss') {
+      const ang = Math.atan2(player.y-e.y, player.x-e.x);
+      let spd = 0.5;
+      if(e.timer%200 > 170) spd = 2.5;
+      e.x += Math.cos(ang)*spd;
+      e.y += Math.sin(ang)*spd;
+    } else if (e.type==='ghost') {
+      // Float toward player with wavy motion
+      const ang = Math.atan2(player.y-e.y, player.x-e.x);
+      const wave = Math.sin(e.timer * 0.06) * 1.2;
+      e.x += Math.cos(ang) * 0.6 + Math.cos(e.timer*0.03) * wave;
+      e.y += Math.sin(ang) * 0.6 + Math.sin(e.timer*0.03) * wave;
+    } else if (e.type==='wraith') {
+      // Teleport-dash behavior: slow stalk then quick dash
+      const ang = Math.atan2(player.y-e.y, player.x-e.x);
+      let spd = 0.4;
+      if (e.timer % 150 > 130) spd = 3.0; // dash phase
+      e.x += Math.cos(ang) * spd;
+      e.y += Math.sin(ang) * spd;
+    } else if (e.type==='shadow_hand') {
+      // Stationary but lunges periodically
+      if (e.timer % 120 > 100) {
+        const ang = Math.atan2(player.y-e.y, player.x-e.x);
+        e.x += Math.cos(ang) * 2.0;
+        e.y += Math.sin(ang) * 2.0;
+      }
+      // Slowly return to origin (approximate)
+      if (e.timer % 120 < 100) {
+        // No need for origin tracking, they just stay still
+      }
+    } else if (e.type==='king_boo') {
+      const ang = Math.atan2(player.y-e.y, player.x-e.x);
+      const phase = e.phase || 1;
+      let spd = 0.4;
+
+      if (phase === 1) {
+        // Slow pursuit with occasional charges
+        if (e.timer % 180 > 155) spd = 2.0;
+        e.x += Math.cos(ang) * spd;
+        e.y += Math.sin(ang) * spd;
+      } else if (phase === 2) {
+        // Faster, more erratic movement
+        spd = 0.7;
+        if (e.timer % 120 > 95) spd = 3.0;
+        e.x += Math.cos(ang) * spd + Math.sin(e.timer * 0.08) * 1.5;
+        e.y += Math.sin(ang) * spd + Math.cos(e.timer * 0.08) * 1.5;
+      } else if (phase === 3) {
+        // Aggressive — constant high speed with teleport-like dashes
+        spd = 1.0;
+        if (e.timer % 80 > 60) spd = 4.0;
+        e.x += Math.cos(ang) * spd;
+        e.y += Math.sin(ang) * spd;
+        // Spawn shadow particles
+        if (e.timer % 10 === 0) {
+          spawnParticles(e.x, e.y, '#6622aa', 2);
+        }
+      }
+    }
+
+    // Keep in bounds
+    e.x = Math.max(40, Math.min(W-40, e.x));
+    e.y = Math.max(40, Math.min(H-40, e.y));
+
+    // Damage player
+    if (player.invuln===0) {
+      const hitDist = (e.type === 'king_boo') ? 36 : 22;
+      const dist = Math.hypot(player.x-e.x, player.y-e.y);
+      if (dist < hitDist) {
+        const dmg = (e.type === 'king_boo') ? 2 : 1;
+        player.hp -= dmg;
+        player.invuln = 60;
+        shakeDur = 6;
+        spawnParticles(player.x, player.y, '#ff0000', 8);
+        if (player.hp <= 0) {
+          // Respawn at level start
+          player.hp = player.maxHp;
+          if (currentLevel === 1) {
+            player.x = 320; player.y = 360;
+            currentRoom = 0;
+          } else {
+            player.x = 320; player.y = 360;
+            currentRoom = 6;
+          }
+          entities = spawnRoomEntities(currentRoom);
+          // Only clear rooms in current level
+          if (currentLevel === 1) {
+            for (let k in roomCleared) { if (parseInt(k) < 6) delete roomCleared[k]; }
+          } else {
+            for (let k in roomCleared) { if (parseInt(k) >= 6) delete roomCleared[k]; }
+          }
+          rooms = buildRooms(); // Rebuild to reset locked doors
+          addMsg('Ezra fell... Try again!');
+        }
+      }
+    }
+  });
+
+  // Item pickup
+  entities.items = entities.items.filter(item => {
+    const dist = Math.hypot(player.x-item.x, player.y-item.y);
+    if (dist < 20) {
+      if (item.type==='crystal' || item.type==='shadow_crystal') {
+        player.crystals++;
+        spawnParticles(item.x,item.y, item.type==='shadow_crystal' ? '#bb66ff' : '#66ddff', 8);
+      }
+      else if (item.type==='heart') { player.hp=Math.min(player.hp+2,player.maxHp); spawnParticles(item.x,item.y,'#ff4466',8); }
+      else if (item.type==='key') { player.keys++; spawnParticles(item.x,item.y,'#ffcc00',8); addMsg('Got a key!'); }
+      return false;
+    }
+    return true;
+  });
+
+  // Particles
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;});
+  particles = particles.filter(p=>p.life>0);
+
+  // Update fog
+  if (currentRoom >= 6) {
+    fogParticles.forEach(f => {
+      f.x += f.speed;
+      if (f.x > W + f.size) f.x = -f.size;
+    });
+  }
+
+  // Messages
+  messages.forEach(m=>m.timer--);
+  messages = messages.filter(m=>m.timer>0);
+
+  // Room transitions
+  checkRoomExit();
+  if(shakeDur>0) shakeDur--;
+
+  updateHUD();
+}
+
+// --- DRAW ---
+function draw() {
+  ctx.save();
+  if (shakeDur > 0) {
+    ctx.translate(Math.random()*6-3, Math.random()*6-3);
+  }
+
+  // Tiles
+  const map = rooms[currentRoom];
+  for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) drawTile(c,r,map[r][c]);
+
+  // Shadow temple fog overlay
+  if (currentRoom >= 6) {
+    fogParticles.forEach(f => {
+      ctx.globalAlpha = f.alpha;
+      ctx.fillStyle = '#2a1840';
+      ctx.beginPath();
+      ctx.ellipse(f.x, f.y, f.size, f.size * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  // Items
+  entities.items.forEach(i => drawItem(i.x, i.y, i.type, gameFrame));
+
+  // Enemies
+  entities.enemies.forEach(e => drawEnemy(e.x, e.y, e.type, gameFrame, e.hp, e.maxHp));
+
+  // Player
+  if (player.invuln===0 || gameFrame%4<2) {
+    drawPixelChar(player.x, player.y, player.dir, player.attacking>0, gameFrame);
+  }
+
+  // Particles
+  particles.forEach(p => {
+    ctx.globalAlpha = p.life / 30;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x-2, p.y-2, 4, 4);
+  });
+  ctx.globalAlpha = 1;
+
+  // Vignette for shadow temple rooms
+  if (currentRoom >= 6) {
+    const grad = ctx.createRadialGradient(W/2, H/2, 100, W/2, H/2, 380);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, 'rgba(10,5,20,0.55)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Messages
+  messages.forEach((m, i) => {
+    ctx.globalAlpha = Math.min(1, m.timer/30);
+    ctx.fillStyle = currentRoom >= 6 ? '#cc88ff' : '#fff';
+    ctx.font = '14px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.strokeText(m.txt, W/2, H/2 - 40 + i*24);
+    ctx.fillText(m.txt, W/2, H/2 - 40 + i*24);
+  });
+  ctx.globalAlpha = 1;
+
+  // Win screen
+  if (gameWon) {
+    ctx.fillStyle = 'rgba(10,5,20,0.75)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#dd44ff';
+    ctx.font = '24px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4;
+    ctx.strokeText('VICTORY!', W/2, H/2-30);
+    ctx.fillText('VICTORY!', W/2, H/2-30);
+    ctx.fillStyle = '#fff';
+    ctx.font = '11px "Press Start 2P", monospace';
+    ctx.lineWidth = 3;
+    ctx.strokeText('King Boo has been vanquished.', W/2, H/2+10);
+    ctx.fillText('King Boo has been vanquished.', W/2, H/2+10);
+    ctx.strokeText('The Shadow Temple is cleansed.', W/2, H/2+32);
+    ctx.fillText('The Shadow Temple is cleansed.', W/2, H/2+32);
+    ctx.fillStyle = '#ffcc00';
+    ctx.strokeText('Crystals: '+player.crystals, W/2, H/2+60);
+    ctx.fillText('Crystals: '+player.crystals, W/2, H/2+60);
+    ctx.fillStyle = '#aaa';
+    ctx.strokeText('Press R to play again', W/2, H/2+88);
+    ctx.fillText('Press R to play again', W/2, H/2+88);
+  }
+
+  ctx.restore();
+}
+
+// --- INPUT ---
+window.addEventListener('keydown', e => {
+  keys_pressed[e.code] = true;
+  if (e.code==='Enter' && !gameStarted) startGame();
+  if (e.code==='Enter' && levelTransitioning) continueToLevel2();
+  if (e.code==='KeyR' && gameWon) resetGame();
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+});
+window.addEventListener('keyup', e => { keys_pressed[e.code] = false; });
+
+// Mobile
+function isMobile() { return 'ontouchstart' in window || navigator.maxTouchPoints > 0; }
+
+document.querySelectorAll('.dpad button').forEach(btn => {
+  const dir = btn.dataset.dir;
+  btn.addEventListener('touchstart', e => { e.preventDefault(); touchDirs[dir] = true; });
+  btn.addEventListener('touchend', e => { e.preventDefault(); touchDirs[dir] = false; });
+  btn.addEventListener('touchcancel', e => { touchDirs[dir] = false; });
+});
+
+document.getElementById('btnAttack').addEventListener('touchstart', e => {
+  e.preventDefault(); touchAttack = true;
+});
+document.getElementById('btnAttack').addEventListener('touchend', e => {
+  e.preventDefault(); touchAttack = false;
+});
+
+document.getElementById('titleScreen').addEventListener('click', () => {
+  if (!gameStarted) startGame();
+});
+
+document.getElementById('levelTransition').addEventListener('click', () => {
+  if (levelTransitioning) continueToLevel2();
+});
+
+// --- GAME LOOP ---
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+  gameStarted = true;
+  document.getElementById('titleScreen').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+  if (isMobile()) document.getElementById('mobileControls').style.display = 'block';
+  addMsg('Find the shattered crystal!');
+  updateHUD();
+}
+
+function resetGame() {
+  gameWon = false;
+  levelTransitioning = false;
+  currentLevel = 1;
+  player = { x:320, y:360, dir:'up', hp:20, maxHp:20, keys:0, crystals:0, attacking:0, invuln:0, speed:2.5 };
+  currentRoom = 0;
+  rooms = buildRooms();
+  entities = spawnRoomEntities(0);
+  roomCleared = {};
+  particles = [];
+  messages = [];
+  addMsg('A new adventure begins!');
+}
+
+// Responsive scaling
+function resize() {
+  const maxW = window.innerWidth - 20;
+  const maxH = window.innerHeight - 20;
+  const scale = Math.min(maxW/W, maxH/H, 2);
+  canvas.style.width = (W*scale)+'px';
+  canvas.style.height = (H*scale)+'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Kick off
+gameLoop();
+</script>
+</body>
+</html>
