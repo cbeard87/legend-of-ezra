@@ -3241,8 +3241,33 @@ document.getElementById('levelTransition4').addEventListener('click', () => {
 });
 
 // --- GAME LOOP ---
-function gameLoop() {
-  update();
+// Fixed-timestep loop: update() runs at a constant 60 Hz regardless of the
+// display's refresh rate, so movement speeds, frame-based timers (e.timer %
+// 90, player.attacking--, etc.), and gameFrame-driven animations don't speed
+// up on 120/144/240 Hz monitors.
+const FIXED_DT_MS = 1000 / 60;
+const MAX_STEPS_PER_FRAME = 5;
+let lastFrameTime = 0;
+let updateAccumulator = 0;
+
+function gameLoop(now) {
+  if (!lastFrameTime) lastFrameTime = now;
+  let frameTime = now - lastFrameTime;
+  lastFrameTime = now;
+  // Clamp huge gaps (tab backgrounded, breakpoints, etc.) so we don't
+  // try to catch up with hundreds of update steps at once.
+  if (frameTime > 250) frameTime = 250;
+  updateAccumulator += frameTime;
+
+  let steps = 0;
+  while (updateAccumulator >= FIXED_DT_MS && steps < MAX_STEPS_PER_FRAME) {
+    update();
+    updateAccumulator -= FIXED_DT_MS;
+    steps++;
+  }
+  // If we hit the cap, drop leftover time to avoid a runaway spiral.
+  if (steps >= MAX_STEPS_PER_FRAME) updateAccumulator = 0;
+
   draw();
   requestAnimationFrame(gameLoop);
 }
@@ -3283,7 +3308,7 @@ window.addEventListener('resize', resize);
 resize();
 
 // Kick off
-gameLoop();
+requestAnimationFrame(gameLoop);
 </script>
 </body>
 </html>
