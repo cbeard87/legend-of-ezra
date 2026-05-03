@@ -212,6 +212,39 @@
     color: #ccc;
     animation: blink 1s infinite;
   }
+
+  /* Level 4 transition overlay */
+  #levelTransition4 {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 150;
+    background: rgba(10,0,20,0.95);
+  }
+  #levelTransition4 h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    color: #ffaa44;
+    text-shadow: 2px 2px 0 #663300, 0 0 20px #ff66cc;
+    margin-bottom: 12px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  #levelTransition4 .level-subtitle {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: #cc88dd;
+    margin-bottom: 40px;
+  }
+  #levelTransition4 .level-prompt {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: #ccc;
+    animation: blink 1s infinite;
+  }
 </style>
 </head>
 <body>
@@ -234,6 +267,12 @@
   <div id="levelTransition3">
     <h2>LEVEL 3<br>THE WATER TEMPLE</h2>
     <div class="level-subtitle">~ Depths Unknown ~</div>
+    <div class="level-prompt">PRESS ENTER OR TAP TO CONTINUE</div>
+  </div>
+
+  <div id="levelTransition4">
+    <h2>LEVEL 4<br>THE RAINBOW TEMPLE</h2>
+    <div class="level-subtitle">~ Colors Unite ~</div>
     <div class="level-prompt">PRESS ENTER OR TAP TO CONTINUE</div>
   </div>
 
@@ -860,14 +899,106 @@ function drawEnemy(x, y, type, frame, hp, maxHp) {
     ctx.fill();
   }
 
+  // ========== RAINBOW TEMPLE SLIMES ==========
+  const slimePalette = {
+    red_slime:    {body:'#dd3344', shade:'#aa1122'},
+    orange_slime: {body:'#ee8822', shade:'#cc6611'},
+    yellow_slime: {body:'#eedd33', shade:'#ccaa11'},
+    green_slime:  {body:'#33cc55', shade:'#229944'},
+    blue_slime:   {body:'#3366dd', shade:'#224499'},
+    indigo_slime: {body:'#5533aa', shade:'#331177'},
+    violet_slime: {body:'#aa44cc', shade:'#771199'}
+  };
+  if (slimePalette[type]) {
+    const pal = slimePalette[type];
+    const squish = Math.sin(frame * 0.08) * 2;
+    ctx.fillStyle = pal.body;
+    ctx.beginPath();
+    ctx.ellipse(x, y + 2, 12 + squish, 10 - squish, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = pal.shade;
+    ctx.beginPath();
+    ctx.ellipse(x, y + 6, 10 + squish, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(bx+8, by+8, 4, 4);
+    ctx.fillRect(bx+16, by+8, 4, 4);
+    ctx.fillStyle = '#222';
+    ctx.fillRect(bx+10, by+10, 2, 2);
+    ctx.fillRect(bx+18, by+10, 2, 2);
+    // Smile
+    ctx.fillStyle = '#222';
+    ctx.fillRect(bx+12, by+15, 4, 1);
+  }
+
+  if (type === 'king_slime') {
+    const squish = Math.sin(frame * 0.06) * 3;
+    const bob = Math.sin(frame * 0.04) * 2;
+    // Big slime body
+    ctx.fillStyle = '#33cc55';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 6 + bob, 28 + squish, 24 - squish, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#229944';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 18 + bob, 24 + squish, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Highlight
+    ctx.fillStyle = '#88ee99';
+    ctx.beginPath();
+    ctx.ellipse(x - 10, y - 6 + bob, 6, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(Math.floor(x - 12), Math.floor(y + bob), 8, 8);
+    ctx.fillRect(Math.floor(x + 4), Math.floor(y + bob), 8, 8);
+    ctx.fillStyle = '#222';
+    ctx.fillRect(Math.floor(x - 8), Math.floor(y + 2 + bob), 4, 4);
+    ctx.fillRect(Math.floor(x + 8), Math.floor(y + 2 + bob), 4, 4);
+    // Wide grin with teeth
+    ctx.fillStyle = '#222';
+    ctx.fillRect(Math.floor(x - 8), Math.floor(y + 12 + bob), 16, 3);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(Math.floor(x - 6), Math.floor(y + 12 + bob), 2, 2);
+    ctx.fillRect(Math.floor(x - 2), Math.floor(y + 12 + bob), 2, 2);
+    ctx.fillRect(Math.floor(x + 2), Math.floor(y + 12 + bob), 2, 2);
+    ctx.fillRect(Math.floor(x + 5), Math.floor(y + 12 + bob), 2, 2);
+    // Crown
+    const crownY = Math.floor(y - 26 + bob);
+    ctx.fillStyle = '#ffcc22';
+    ctx.fillRect(Math.floor(x - 14), crownY + 4, 28, 6);
+    // Crown points
+    ctx.fillRect(Math.floor(x - 14), crownY, 4, 6);
+    ctx.fillRect(Math.floor(x - 2), crownY - 2, 4, 8);
+    ctx.fillRect(Math.floor(x + 10), crownY, 4, 6);
+    // Crown jewels
+    ctx.fillStyle = '#dd3344';
+    ctx.fillRect(Math.floor(x - 12), crownY + 2, 2, 2);
+    ctx.fillStyle = '#3366dd';
+    ctx.fillRect(Math.floor(x - 1), crownY - 1, 2, 2);
+    ctx.fillStyle = '#eedd33';
+    ctx.fillRect(Math.floor(x + 11), crownY + 2, 2, 2);
+    // Crown band gleam
+    ctx.fillStyle = '#ffee88';
+    ctx.fillRect(Math.floor(x - 12), crownY + 5, 4, 1);
+  }
+
   // HP bar
   if (hp < maxHp) {
-    const barW = (type === 'king_boo' || type === 'octomaw') ? 60 : 28;
-    const barX = (type === 'king_boo' || type === 'octomaw') ? Math.floor(x - 30) : bx;
-    const barY = (type === 'king_boo') ? Math.floor(y - 55) : (type === 'octomaw') ? Math.floor(y - 60) : by - 6;
+    const isBigBoss = (type === 'king_boo' || type === 'octomaw' || type === 'king_slime');
+    const barW = isBigBoss ? 60 : 28;
+    const barX = isBigBoss ? Math.floor(x - 30) : bx;
+    const barY = (type === 'king_boo') ? Math.floor(y - 55)
+               : (type === 'octomaw') ? Math.floor(y - 60)
+               : (type === 'king_slime') ? Math.floor(y - 50)
+               : by - 6;
     ctx.fillStyle = '#333';
     ctx.fillRect(barX, barY, barW, 3);
-    ctx.fillStyle = (type === 'king_boo') ? '#aa44ff' : (type === 'octomaw') ? '#44aadd' : '#ee3333';
+    ctx.fillStyle = (type === 'king_boo') ? '#aa44ff'
+                  : (type === 'octomaw') ? '#44aadd'
+                  : (type === 'king_slime') ? '#33cc55'
+                  : '#ee3333';
     ctx.fillRect(barX, barY, barW * (hp/maxHp), 3);
   }
 }
@@ -950,7 +1081,9 @@ const T = {
   SHADOW_BRICK: 18,
   // Water Temple tiles
   WATER_FLOOR: 19, WATER_WALL: 20, SHALLOW_WATER: 21, DEEP_WATER: 22,
-  CORAL: 23, SEAWEED: 24, LILY_PAD: 25, WET_BRICK: 26
+  CORAL: 23, SEAWEED: 24, LILY_PAD: 25, WET_BRICK: 26,
+  // Rainbow Temple tiles
+  RAINBOW_FLOOR: 27, PRISM_WALL: 28, PRISM: 29, COLOR_POOL: 30
 };
 
 function drawTile(col, row, type) {
@@ -1315,6 +1448,85 @@ function drawTile(col, row, type) {
         ctx.globalAlpha = 1;
       }
       break;
+    case T.RAINBOW_FLOOR: {
+      ctx.fillStyle = '#2a1a3a';
+      ctx.fillRect(x,y,TILE,TILE);
+      const rainbow = ['#dd3344','#ee8822','#eedd33','#33cc55','#3366dd','#5533aa','#aa44cc'];
+      const idx = ((col + row) % 7 + 7) % 7;
+      ctx.fillStyle = rainbow[idx];
+      ctx.globalAlpha = 0.5;
+      ctx.fillRect(x+4, y+4, 3, 3);
+      ctx.fillRect(x+22, y+10, 3, 3);
+      ctx.fillRect(x+12, y+22, 3, 3);
+      ctx.globalAlpha = 1;
+      const shine = Math.sin((x + y + gameFrame) * 0.06);
+      if (shine > 0.4) {
+        ctx.globalAlpha = (shine - 0.4) * 0.3;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x+8, y+14, 2, 2);
+        ctx.globalAlpha = 1;
+      }
+      break;
+    }
+    case T.PRISM_WALL: {
+      ctx.fillStyle = '#2a1844';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#553388';
+      ctx.fillRect(x+1, y+1, TILE-2, TILE-2);
+      // Diagonal prism stripes
+      ctx.fillStyle = '#aa66dd';
+      ctx.fillRect(x+4, y+2, 3, TILE-4);
+      ctx.fillRect(x+14, y+2, 3, TILE-4);
+      ctx.fillRect(x+24, y+2, 3, TILE-4);
+      ctx.fillStyle = '#ffeeff';
+      ctx.fillRect(x+5, y+4, 1, 6);
+      ctx.fillRect(x+15, y+12, 1, 6);
+      ctx.fillRect(x+25, y+20, 1, 6);
+      break;
+    }
+    case T.PRISM: {
+      // Walkable decorative crystal cluster
+      ctx.fillStyle = '#2a1a3a';
+      ctx.fillRect(x,y,TILE,TILE);
+      const colors = ['#dd3344','#33cc55','#3366dd','#eedd33'];
+      for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = colors[i];
+        const cx = x + 6 + (i % 2) * 14;
+        const cy = y + 6 + Math.floor(i / 2) * 14;
+        ctx.beginPath();
+        ctx.moveTo(cx + 4, cy);
+        ctx.lineTo(cx + 8, cy + 4);
+        ctx.lineTo(cx + 4, cy + 10);
+        ctx.lineTo(cx, cy + 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 0.6;
+        ctx.fillRect(cx + 3, cy + 2, 1, 3);
+        ctx.globalAlpha = 1;
+      }
+      break;
+    }
+    case T.COLOR_POOL: {
+      // Walkable rainbow shimmer pool
+      ctx.fillStyle = '#1a0a2a';
+      ctx.fillRect(x,y,TILE,TILE);
+      const t = (x + y + gameFrame) * 0.04;
+      const r = Math.floor(128 + 127 * Math.sin(t));
+      const g = Math.floor(128 + 127 * Math.sin(t + 2.0));
+      const b = Math.floor(128 + 127 * Math.sin(t + 4.0));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+      ctx.ellipse(x + 16, y + 16, 12, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.4;
+      ctx.fillRect(x + 10, y + 12, 4, 1);
+      ctx.globalAlpha = 1;
+      break;
+    }
   }
 }
 
@@ -1349,6 +1561,18 @@ function solidWaterWalls(base) {
     m[r] = [];
     for (let c=0; c<COLS; c++) {
       if (r===0||r===ROWS-1||c===0||c===COLS-1) m[r][c] = T.WATER_WALL;
+      else m[r][c] = base;
+    }
+  }
+  return m;
+}
+
+function solidPrismWalls(base) {
+  const m = [];
+  for (let r=0; r<ROWS; r++) {
+    m[r] = [];
+    for (let c=0; c<COLS; c++) {
+      if (r===0||r===ROWS-1||c===0||c===COLS-1) m[r][c] = T.PRISM_WALL;
       else m[r][c] = base;
     }
   }
@@ -1674,7 +1898,107 @@ function buildRooms() {
   r19[11][9]=T.SHALLOW_WATER; r19[11][10]=T.SHALLOW_WATER;
   addDoors(r19, ['up']);
 
-  return [r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19];
+  // ===================== LEVEL 4: THE RAINBOW TEMPLE =====================
+
+  // Room 20: Rainbow Entrance (bottom of map — player starts here, exits up)
+  const r20 = solidPrismWalls(T.RAINBOW_FLOOR);
+  // Color pools framing the entrance
+  for (let r=4; r<7; r++) {
+    r20[r][2] = T.COLOR_POOL; r20[r][3] = T.COLOR_POOL;
+    r20[r][16] = T.COLOR_POOL; r20[r][17] = T.COLOR_POOL;
+  }
+  // Prism decorations
+  r20[3][6] = T.PRISM; r20[3][13] = T.PRISM;
+  r20[10][6] = T.PRISM; r20[10][13] = T.PRISM;
+  r20[8][9] = T.PRISM; r20[8][10] = T.PRISM;
+  addDoors(r20, ['up']);
+
+  // Room 21: Color Corridor
+  const r21 = solidPrismWalls(T.RAINBOW_FLOOR);
+  // Snaking color pool path
+  for (let c=4; c<10; c++) r21[3][c] = T.COLOR_POOL;
+  for (let c=10; c<16; c++) r21[9][c] = T.COLOR_POOL;
+  for (let r=3; r<10; r++) r21[r][9] = T.COLOR_POOL;
+  // Prism decorations
+  r21[5][3] = T.PRISM; r21[5][16] = T.PRISM;
+  r21[7][3] = T.PRISM; r21[7][16] = T.PRISM;
+  r21[11][6] = T.PRISM; r21[11][13] = T.PRISM;
+  addDoors(r21, ['up','down']);
+
+  // Room 22: Spectrum Junction (hub — splits left to key room, up to main path)
+  const r22 = solidPrismWalls(T.RAINBOW_FLOOR);
+  // Central rainbow plaza
+  for (let r=5; r<8; r++) for (let c=8; c<12; c++) r22[r][c] = T.COLOR_POOL;
+  // Prism pillars marking the three paths
+  r22[3][9] = T.PRISM; r22[3][10] = T.PRISM;
+  r22[6][3] = T.PRISM; r22[6][16] = T.PRISM;
+  r22[10][9] = T.PRISM; r22[10][10] = T.PRISM;
+  // Decorative pools in corners
+  r22[2][2] = T.COLOR_POOL; r22[2][17] = T.COLOR_POOL;
+  r22[12][2] = T.COLOR_POOL; r22[12][17] = T.COLOR_POOL;
+  addDoors(r22, ['up','down','left']);
+
+  // Room 23: Key Chamber (left dead-end — contains boss key)
+  const r23 = solidPrismWalls(T.RAINBOW_FLOOR);
+  // Inner shrine for the key
+  for (let r=5; r<8; r++) for (let c=8; c<12; c++) r23[r][c] = T.COLOR_POOL;
+  // Surrounding prism ring
+  r23[4][8] = T.PRISM; r23[4][9] = T.PRISM; r23[4][10] = T.PRISM; r23[4][11] = T.PRISM;
+  r23[8][8] = T.PRISM; r23[8][9] = T.PRISM; r23[8][10] = T.PRISM; r23[8][11] = T.PRISM;
+  r23[5][7] = T.PRISM; r23[6][7] = T.PRISM; r23[7][7] = T.PRISM;
+  r23[5][12] = T.PRISM; r23[6][12] = T.PRISM; r23[7][12] = T.PRISM;
+  // Atmosphere
+  r23[2][3] = T.COLOR_POOL; r23[12][3] = T.COLOR_POOL;
+  addDoors(r23, ['right']);
+
+  // Room 24: Mid-Upper Hall
+  const r24 = solidPrismWalls(T.RAINBOW_FLOOR);
+  // Wide central pool
+  for (let c=4; c<16; c++) r24[7][c] = T.COLOR_POOL;
+  for (let c=4; c<16; c++) r24[8][c] = T.COLOR_POOL;
+  // Prism formations
+  r24[3][5] = T.PRISM; r24[3][9] = T.PRISM; r24[3][14] = T.PRISM;
+  r24[11][5] = T.PRISM; r24[11][9] = T.PRISM; r24[11][14] = T.PRISM;
+  r24[5][2] = T.PRISM; r24[5][17] = T.PRISM;
+  addDoors(r24, ['up','down']);
+
+  // Room 25: Pre-Boss Arena (locked door up to boss)
+  const r25 = solidPrismWalls(T.RAINBOW_FLOOR);
+  // Open arena ringed with hazards
+  for (let r=3; r<5; r++) {
+    for (let c=3; c<6; c++) r25[r][c] = T.COLOR_POOL;
+    for (let c=14; c<17; c++) r25[r][c] = T.COLOR_POOL;
+  }
+  for (let r=8; r<11; r++) {
+    for (let c=3; c<6; c++) r25[r][c] = T.COLOR_POOL;
+    for (let c=14; c<17; c++) r25[r][c] = T.COLOR_POOL;
+  }
+  // Center prism cluster
+  r25[6][9] = T.PRISM; r25[6][10] = T.PRISM;
+  r25[7][8] = T.PRISM; r25[7][11] = T.PRISM;
+  // Decorative prisms
+  r25[2][6] = T.PRISM; r25[2][13] = T.PRISM;
+  r25[12][6] = T.PRISM; r25[12][13] = T.PRISM;
+  addDoors(r25, ['down']);
+  addLockedDoor(r25, 'up');
+
+  // Room 26: King Slime's Throne (boss room, top)
+  const r26 = solidPrismWalls(T.RAINBOW_FLOOR);
+  // Throne dais of color pool
+  for (let r=3; r<6; r++) for (let c=8; c<12; c++) r26[r][c] = T.COLOR_POOL;
+  // Outer prism ring (arena edge)
+  for (let c=2; c<18; c++) r26[2][c] = (c % 3 === 0) ? T.PRISM : T.RAINBOW_FLOOR;
+  for (let c=2; c<18; c++) r26[12][c] = (c % 3 === 0) ? T.PRISM : T.RAINBOW_FLOOR;
+  // Corner prisms
+  r26[3][2] = T.PRISM; r26[3][17] = T.PRISM;
+  r26[11][2] = T.PRISM; r26[11][17] = T.PRISM;
+  // Side color pools
+  r26[7][2] = T.COLOR_POOL; r26[7][3] = T.COLOR_POOL;
+  r26[7][16] = T.COLOR_POOL; r26[7][17] = T.COLOR_POOL;
+  addDoors(r26, ['down']);
+
+  return [r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19,
+          r20, r21, r22, r23, r24, r25, r26];
 }
 
 // Room connections
@@ -1723,6 +2047,21 @@ const connections = {
   '18-up':    [17, 'down', W/2, H-50],
   '18-down':  [19, 'up', W/2, 50],
   '19-up':    [18, 'down', W/2, H-50],
+
+  // Level 4: Rainbow Temple
+  // Layout: 20(bottom/entry) → 21 → 22 ←left→ 23(KEY), 22 → 24 → 25 → locked → 26(boss)
+  '20-up':    [21, 'down', W/2, H-50],
+  '21-down':  [20, 'up',   W/2, 50],
+  '21-up':    [22, 'down', W/2, H-50],
+  '22-down':  [21, 'up',   W/2, 50],
+  '22-left':  [23, 'right', W-50, H/2],
+  '22-up':    [24, 'down', W/2, H-50],
+  '23-right': [22, 'left', 50,  H/2],
+  '24-down':  [22, 'up',   W/2, 50],
+  '24-up':    [25, 'down', W/2, H-50],
+  '25-down':  [24, 'up',   W/2, 50],
+  '25-up':    [26, 'down', W/2, H-50],
+  '26-down':  [25, 'up',   W/2, 50],
 };
 
 // --- ROOM ENEMIES & ITEMS ---
@@ -1942,6 +2281,77 @@ function spawnRoomEntities(roomIdx) {
         {x:320,y:420,type:'heart'}
       );
       break;
+
+    // ========== LEVEL 4: RAINBOW TEMPLE ==========
+    case 20:
+      enemies.push(
+        {x:220,y:240,type:'red_slime',   hp:1,maxHp:1,vx:0.7,vy:0.5,timer:0},
+        {x:430,y:280,type:'orange_slime',hp:2,maxHp:2,vx:-0.5,vy:0.4,timer:0}
+      );
+      items.push(
+        {x:160,y:160,type:'crystal'},
+        {x:480,y:200,type:'crystal'}
+      );
+      break;
+    case 21:
+      enemies.push(
+        {x:200,y:200,type:'yellow_slime',hp:1,maxHp:1,vx:0.6,vy:-0.4,timer:0},
+        {x:440,y:340,type:'green_slime', hp:2,maxHp:2,vx:-0.4,vy:0.3,timer:0},
+        {x:320,y:140,type:'red_slime',   hp:1,maxHp:1,vx:0.5,vy:0.4,timer:0}
+      );
+      items.push(
+        {x:320,y:380,type:'crystal'}
+      );
+      break;
+    case 22:
+      enemies.push(
+        {x:200,y:160,type:'green_slime', hp:2,maxHp:2,vx:0.4,vy:0.4,timer:0},
+        {x:450,y:330,type:'blue_slime',  hp:3,maxHp:3,vx:-0.3,vy:-0.3,timer:0}
+      );
+      items.push(
+        {x:160,y:380,type:'crystal'},
+        {x:500,y:140,type:'crystal'}
+      );
+      break;
+    case 23:
+      enemies.push(
+        {x:320,y:160,type:'indigo_slime',hp:2,maxHp:2,vx:0.4,vy:0.3,timer:0}
+      );
+      items.push(
+        {x:320,y:240,type:'key'},
+        {x:160,y:240,type:'heart'}
+      );
+      break;
+    case 24:
+      enemies.push(
+        {x:200,y:200,type:'blue_slime',  hp:3,maxHp:3,vx:0.4,vy:0.3,timer:0},
+        {x:440,y:200,type:'blue_slime',  hp:3,maxHp:3,vx:-0.4,vy:0.3,timer:0},
+        {x:320,y:340,type:'indigo_slime',hp:2,maxHp:2,vx:0.5,vy:-0.4,timer:0}
+      );
+      items.push(
+        {x:320,y:120,type:'crystal'}
+      );
+      break;
+    case 25:
+      enemies.push(
+        {x:320,y:240,type:'violet_slime',hp:3,maxHp:3,vx:0.4,vy:0.3,timer:0},
+        {x:180,y:160,type:'red_slime',   hp:1,maxHp:1,vx:0.6,vy:0.5,timer:0},
+        {x:460,y:340,type:'yellow_slime',hp:1,maxHp:1,vx:-0.7,vy:-0.4,timer:0}
+      );
+      items.push(
+        {x:160,y:380,type:'heart'},
+        {x:500,y:140,type:'crystal'}
+      );
+      break;
+    case 26:
+      enemies.push(
+        {x:320,y:200,type:'king_slime',hp:30,maxHp:30,vx:0.4,vy:0.3,timer:0,phase:1}
+      );
+      items.push(
+        {x:120,y:400,type:'heart'},
+        {x:520,y:400,type:'heart'}
+      );
+      break;
   }
   return { enemies, items };
 }
@@ -2030,7 +2440,8 @@ function isSolid(px, py, ignoreDoors) {
   const t = rooms[currentRoom][r][c];
   if (t===T.WALL||t===T.TREE||t===T.BUSH||t===T.WATER||t===T.LAVA||
       t===T.SHADOW_WALL||t===T.VOID||t===T.TOMBSTONE||t===T.PURPLE_FIRE||t===T.BLOOD_POOL||
-      t===T.WATER_WALL||t===T.DEEP_WATER||t===T.CORAL||t===T.SEAWEED) return true;
+      t===T.WATER_WALL||t===T.DEEP_WATER||t===T.CORAL||t===T.SEAWEED||
+      t===T.PRISM_WALL) return true;
   if (t===T.LOCKED) {
     if (player.keys > 0) {
       player.keys--;
@@ -2138,10 +2549,34 @@ function continueToLevel3() {
   updateHUD();
 }
 
+function startLevel4() {
+  levelTransitioning = true;
+  levelTransitionTarget = 4;
+  currentLevel = 4;
+  document.getElementById('levelTransition4').style.display = 'flex';
+}
+
+function continueToLevel4() {
+  levelTransitioning = false;
+  levelTransitionTarget = 0;
+  document.getElementById('levelTransition4').style.display = 'none';
+  currentRoom = 20;
+  player.x = 320;
+  player.y = 360;
+  player.hp = player.maxHp;
+  player.invuln = 60;
+  entities = spawnRoomEntities(20);
+  particles = [];
+  messages = [];
+  addMsg('A spectrum of slimes awaits...');
+  updateHUD();
+}
+
 function handleLevelTransitionInput() {
   if (!levelTransitioning) return false;
   if (levelTransitionTarget === 2) { continueToLevel2(); return true; }
   if (levelTransitionTarget === 3) { continueToLevel3(); return true; }
+  if (levelTransitionTarget === 4) { continueToLevel4(); return true; }
   return false;
 }
 
@@ -2194,7 +2629,7 @@ function update() {
   if (player.attacking === 14) {
     const sr = getSwordRect();
     entities.enemies.forEach(e => {
-      const hitSize = (e.type === 'king_boo' || e.type === 'octomaw') ? 40 : 14;
+      const hitSize = (e.type === 'king_boo' || e.type === 'octomaw' || e.type === 'king_slime') ? 40 : 14;
       const er = {x:e.x-hitSize,y:e.y-hitSize,w:hitSize*2,h:hitSize*2};
       if (rectsOverlap(sr,er)) {
         e.hp--;
@@ -2251,6 +2686,35 @@ function update() {
           }
         }
 
+        // King Slime phase transitions
+        if (e.type === 'king_slime') {
+          spawnParticles(e.x, e.y, '#88ffaa', 8);
+          if (e.hp <= 22 && e.phase === 1) {
+            e.phase = 2;
+            addMsg('King Slime splits with rage!');
+            entities.enemies.push(
+              {x:150,y:150,type:'red_slime', hp:1,maxHp:1,vx:0.6,vy:0.4,timer:0},
+              {x:490,y:150,type:'blue_slime',hp:3,maxHp:3,vx:-0.4,vy:0.4,timer:0}
+            );
+          }
+          if (e.hp <= 14 && e.phase === 2) {
+            e.phase = 3;
+            addMsg('Colors burst forth!');
+            entities.enemies.push(
+              {x:150,y:350,type:'yellow_slime',hp:1,maxHp:1,vx:0.7,vy:-0.5,timer:0},
+              {x:490,y:350,type:'green_slime', hp:2,maxHp:2,vx:-0.5,vy:-0.4,timer:0}
+            );
+          }
+          if (e.hp <= 6 && e.phase === 3) {
+            e.phase = 4;
+            addMsg('THE KING SLIME IS DESPERATE!');
+            entities.enemies.push(
+              {x:200,y:200,type:'indigo_slime',hp:2,maxHp:2,vx:0,vy:0,timer:0},
+              {x:440,y:200,type:'violet_slime',hp:3,maxHp:3,vx:0,vy:0,timer:0}
+            );
+          }
+        }
+
         if (e.hp <= 0) {
           spawnParticles(e.x,e.y,'#ff4444',12);
           if (e.type === 'boss' && currentLevel === 1) {
@@ -2263,11 +2727,22 @@ function update() {
             setTimeout(() => startLevel3(), 1500);
           }
           if (e.type === 'octomaw') {
-            gameWon = true;
+            addMsg('A colorful glow rises from below...');
             spawnParticles(e.x, e.y, '#44ddff', 30);
             spawnParticles(e.x, e.y, '#ffffff', 20);
             spawnParticles(e.x, e.y, '#ff88aa', 15);
-            addMsg('THE OCTOMAW IS DEFEATED!');
+            setTimeout(() => startLevel4(), 1500);
+          }
+          if (e.type === 'king_slime') {
+            gameWon = true;
+            spawnParticles(e.x, e.y, '#dd3344', 20);
+            spawnParticles(e.x, e.y, '#ee8822', 20);
+            spawnParticles(e.x, e.y, '#eedd33', 20);
+            spawnParticles(e.x, e.y, '#33cc55', 20);
+            spawnParticles(e.x, e.y, '#3366dd', 20);
+            spawnParticles(e.x, e.y, '#5533aa', 20);
+            spawnParticles(e.x, e.y, '#aa44cc', 20);
+            addMsg('THE KING SLIME IS DEFEATED!');
           }
         }
       }
@@ -2410,6 +2885,74 @@ function update() {
         e.y += Math.sin(ang) * spd + Math.sin(e.timer * 0.12) * 2.5;
         if (e.timer % 6 === 0) spawnParticles(e.x, e.y, '#44aadd', 3);
       }
+
+    // ========== RAINBOW TEMPLE ENEMY AI ==========
+    } else if (e.type === 'red_slime') {
+      e.x += e.vx * 1.2;
+      e.y += e.vy * 1.2;
+      if (e.timer % 60 === 0) { e.vx = -e.vx; e.vy = -e.vy; }
+      if (e.timer % 100 === 0) {
+        const ang = Math.atan2(player.y - e.y, player.x - e.x);
+        e.vx = Math.cos(ang) * 1.0;
+        e.vy = Math.sin(ang) * 1.0;
+      }
+    } else if (e.type === 'orange_slime') {
+      e.x += e.vx;
+      e.y += e.vy;
+      if (e.timer % 90 === 0) { e.vx = -e.vx; e.vy = -e.vy; }
+    } else if (e.type === 'yellow_slime') {
+      e.x += e.vx + Math.sin(e.timer * 0.2) * 1.5;
+      e.y += e.vy + Math.cos(e.timer * 0.15) * 1.0;
+      if (e.timer % 70 === 0) { e.vx = -e.vx; e.vy = -e.vy; }
+    } else if (e.type === 'green_slime') {
+      const ang = Math.atan2(player.y - e.y, player.x - e.x);
+      e.x += Math.cos(ang) * 0.4;
+      e.y += Math.sin(ang) * 0.4;
+    } else if (e.type === 'blue_slime') {
+      const ang = Math.atan2(player.y - e.y, player.x - e.x);
+      e.x += Math.cos(ang) * 0.3;
+      e.y += Math.sin(ang) * 0.3;
+    } else if (e.type === 'indigo_slime') {
+      const ang = Math.atan2(player.y - e.y, player.x - e.x);
+      let spd = 0.3;
+      if (e.timer % 130 > 110) spd = 2.8;
+      e.x += Math.cos(ang) * spd;
+      e.y += Math.sin(ang) * spd;
+    } else if (e.type === 'violet_slime') {
+      e.x += e.vx + Math.sin(e.timer * 0.1) * 1.2;
+      e.y += e.vy + Math.cos(e.timer * 0.08) * 1.2;
+      if (e.timer % 180 === 0) {
+        const ang = Math.atan2(player.y - e.y, player.x - e.x);
+        e.x += Math.cos(ang) * 60;
+        e.y += Math.sin(ang) * 60;
+        spawnParticles(e.x, e.y, '#cc66ff', 6);
+      }
+    } else if (e.type === 'king_slime') {
+      const ang = Math.atan2(player.y - e.y, player.x - e.x);
+      const phase = e.phase || 1;
+      let spd = 0.35;
+      if (phase === 1) {
+        if (e.timer % 200 > 170) spd = 2.0;
+        e.x += Math.cos(ang) * spd;
+        e.y += Math.sin(ang) * spd;
+      } else if (phase === 2) {
+        spd = 0.6;
+        if (e.timer % 140 > 110) spd = 2.6;
+        e.x += Math.cos(ang) * spd + Math.sin(e.timer * 0.06) * 1.0;
+        e.y += Math.sin(ang) * spd + Math.cos(e.timer * 0.06) * 1.0;
+      } else if (phase === 3) {
+        spd = 0.9;
+        if (e.timer % 100 > 80) spd = 3.4;
+        e.x += Math.cos(ang) * spd;
+        e.y += Math.sin(ang) * spd;
+        if (e.timer % 12 === 0) spawnParticles(e.x, e.y, '#aaffaa', 2);
+      } else if (phase === 4) {
+        spd = 1.2;
+        if (e.timer % 70 > 55) spd = 4.0;
+        e.x += Math.cos(ang) * spd + Math.cos(e.timer * 0.13) * 2.0;
+        e.y += Math.sin(ang) * spd + Math.sin(e.timer * 0.11) * 2.0;
+        if (e.timer % 8 === 0) spawnParticles(e.x, e.y, '#ff66ff', 2);
+      }
     }
 
     // Keep in bounds
@@ -2418,10 +2961,10 @@ function update() {
 
     // Damage player
     if (player.invuln===0) {
-      const hitDist = (e.type === 'king_boo' || e.type === 'octomaw') ? 36 : 22;
+      const hitDist = (e.type === 'king_boo' || e.type === 'octomaw' || e.type === 'king_slime') ? 36 : 22;
       const dist = Math.hypot(player.x-e.x, player.y-e.y);
       if (dist < hitDist) {
-        const dmg = (e.type === 'king_boo' || e.type === 'octomaw') ? 2 : 1;
+        const dmg = (e.type === 'king_boo' || e.type === 'octomaw' || e.type === 'king_slime') ? 2 : 1;
         player.hp -= dmg;
         player.invuln = 60;
         shakeDur = 6;
@@ -2434,9 +2977,12 @@ function update() {
           } else if (currentLevel === 2) {
             player.x = 320; player.y = 360;
             currentRoom = 6;
-          } else {
+          } else if (currentLevel === 3) {
             player.x = 320; player.y = 360;
             currentRoom = 12;
+          } else {
+            player.x = 320; player.y = 360;
+            currentRoom = 20;
           }
           entities = spawnRoomEntities(currentRoom);
           // Clear rooms for current level only
@@ -2444,8 +2990,10 @@ function update() {
             for (let k in roomCleared) { if (parseInt(k) < 6) delete roomCleared[k]; }
           } else if (currentLevel === 2) {
             for (let k in roomCleared) { const ki=parseInt(k); if (ki >= 6 && ki < 12) delete roomCleared[k]; }
+          } else if (currentLevel === 3) {
+            for (let k in roomCleared) { const ki=parseInt(k); if (ki >= 12 && ki < 20) delete roomCleared[k]; }
           } else {
-            for (let k in roomCleared) { if (parseInt(k) >= 12) delete roomCleared[k]; }
+            for (let k in roomCleared) { if (parseInt(k) >= 20) delete roomCleared[k]; }
           }
           rooms = buildRooms();
           addMsg('Ezra fell... Try again!');
@@ -2608,22 +3156,34 @@ function draw() {
 
   // Win screen
   if (gameWon) {
-    ctx.fillStyle = 'rgba(5,15,35,0.8)';
+    ctx.fillStyle = 'rgba(20,5,35,0.85)';
     ctx.fillRect(0,0,W,H);
-    ctx.fillStyle = '#44ddff';
+    // Rainbow VICTORY title — draw each letter in a different color
+    const victoryText = 'VICTORY!';
+    const rainbowColors = ['#dd3344','#ee8822','#eedd33','#33cc55','#3366dd','#5533aa','#aa44cc','#dd3344'];
     ctx.font = '24px "Press Start 2P", monospace';
     ctx.textAlign = 'center';
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 4;
-    ctx.strokeText('VICTORY!', W/2, H/2-40);
-    ctx.fillText('VICTORY!', W/2, H/2-40);
+    const titleY = H/2 - 40;
+    // Measure full string for centering, then draw letter-by-letter
+    const fullW = ctx.measureText(victoryText).width;
+    let cx = W/2 - fullW/2;
+    for (let i = 0; i < victoryText.length; i++) {
+      const ch = victoryText[i];
+      const chW = ctx.measureText(ch).width;
+      ctx.fillStyle = rainbowColors[i];
+      ctx.strokeText(ch, cx + chW/2, titleY);
+      ctx.fillText(ch, cx + chW/2, titleY);
+      cx += chW;
+    }
     ctx.fillStyle = '#fff';
     ctx.font = '11px "Press Start 2P", monospace';
     ctx.lineWidth = 3;
-    ctx.strokeText('The Octomaw has been defeated.', W/2, H/2);
-    ctx.fillText('The Octomaw has been defeated.', W/2, H/2);
-    ctx.strokeText('The Water Temple is purified.', W/2, H/2+22);
-    ctx.fillText('The Water Temple is purified.', W/2, H/2+22);
+    ctx.strokeText('The King Slime has been defeated.', W/2, H/2);
+    ctx.fillText('The King Slime has been defeated.', W/2, H/2);
+    ctx.strokeText('The Rainbow Temple shines bright.', W/2, H/2+22);
+    ctx.fillText('The Rainbow Temple shines bright.', W/2, H/2+22);
     ctx.strokeText('The shattered crystal is whole.', W/2, H/2+44);
     ctx.fillText('The shattered crystal is whole.', W/2, H/2+44);
     ctx.fillStyle = '#ffcc00';
@@ -2674,6 +3234,10 @@ document.getElementById('levelTransition').addEventListener('click', () => {
 
 document.getElementById('levelTransition3').addEventListener('click', () => {
   if (levelTransitioning && levelTransitionTarget === 3) handleLevelTransitionInput();
+});
+
+document.getElementById('levelTransition4').addEventListener('click', () => {
+  if (levelTransitioning && levelTransitionTarget === 4) handleLevelTransitionInput();
 });
 
 // --- GAME LOOP ---
